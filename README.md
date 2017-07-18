@@ -1,6 +1,8 @@
  
- Dora is a document classifier. It can be used create classfiers from a few sample data. It can also be used to classify e benchmark sucess and error ratio.  It is based on semi-spervisioned; It is based on open computer vision (opencv) and collects a fiew other techniques. Written originally in VC++ is being recently ported to linux;
- 
+    Dora is a document classifier. It can be used create classfiers from sample data. It can also be used to classify and benchmark success and error ratio.  It is a supervised machine learning algorithm; It is based on open computer vision (opencv) combined with other techniques. Written originally in VC++ is being recently ported to linux;
+    
+    It is a console application and there's no setup required, but OpenCV should be installed.
+    
  Usage:
    options:
       -h      	Displays this information.
