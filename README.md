@@ -24,8 +24,4 @@ Usage:
        dora -m 'c:/samples/' 'c:/docs/model.xml'
        dora -c 'c:/docs/doc.jpg' 'c:/docs/model.xml'
        dora -c 'c:/docs' 'c:/docs/model.xml'
-       dora -c 'c:/docs/*.png' 'c:/docs/model.xml'      
-
-
-#Sample images are not provided.
-    
+       dora -c 'c:/docs/*.png' 'c:/docs/model.xml'
