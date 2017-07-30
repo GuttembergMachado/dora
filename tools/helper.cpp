@@ -1,8 +1,24 @@
+#include <list>
 #include "helper.h"
 
 using namespace std;
 
+//	0; errors only
+//	1; errors and warnings
+//	2; errors, warnings and debug
+//	3; errors, warnings, debug and details
+int log_level = 2;
+
 string log_filename = "log.txt";
+
+string getLogMode(){
+	switch (log_level){
+		case 0:	return "errors only";
+		case 1: return "errors and warnings";
+		case 2: return "errors, warnings and debug";
+		case 3:	return "errors, warnings, debug and details (might affect performance)";
+	}
+}
 
 void Log(logMode mode, string moduleName, string procedureName, string information, ...){
 
@@ -13,93 +29,199 @@ void Log(logMode mode, string moduleName, string procedureName, string informati
 	va_end (args);
 	information = info;
 
-	string buffer = "";
+	if(log_level >= mode) {
 
-	//Formata o nome do module com 18 chars
-	moduleName.append("                  ");
-	moduleName = moduleName.substr(0, 18);
+		string buffer = "";
 
-	//Formata o nome da procedure com 20 chars
-	procedureName.append("                    ");
-	procedureName = procedureName.substr(0, 20);
+		//Formata o nome do module com 18 chars
+		moduleName.append("                  ");
+		moduleName = moduleName.substr(0, 18);
 
-	//Monta o texto que será logado
-	buffer = moduleName + " | " + procedureName + " | " + information + "\n";
+		//Formata o nome da procedure com 20 chars
+		procedureName.append("                    ");
+		procedureName = procedureName.substr(0, 20);
 
-	//Exibe a string no console
-    printf("%s", buffer.c_str());
+		//Monta o texto que será logado
+		buffer = moduleName + " | " + procedureName + " | ";
 
-	//Concatena o horário no buffer
-	buffer = string(getCurrentTimeStamp()) + string(" | ").c_str() + buffer.c_str();
+		buffer += information + "\n";
 
-	//Abre o arquivo para append
-	_IO_FILE * fp;
-	fp = fopen(log_filename.c_str(), "a+");
-	if (NULL != fp){
+		//Exibe a string no console
+		printf("%s", buffer.c_str());
 
-		//Adiciona o texto no arquivo
-		fprintf(fp, "%s", buffer.c_str());
+		//Concatena o horário no buffer
+		buffer = string(getCurrentTimeStamp()) + string(" | ").c_str() + buffer.c_str();
 
-		//Fecha o arquivo
-		fclose(fp);
+		//Abre o arquivo para append
+		_IO_FILE *fp;
+		fp = fopen(log_filename.c_str(), "a+");
+		if (NULL != fp) {
+
+			//Adiciona o texto no arquivo
+			fprintf(fp, "%s", buffer.c_str());
+
+			//Fecha o arquivo
+			fclose(fp);
+		}
 	}
+}
+
+bool isFile(string path){
+
+	struct stat s;
+	Log(log_Detail, "helper.cpp", "isFile", "   Checking path '%s'...", path.c_str());
+
+	try {
+		if (stat(path.c_str(), &s) == 0)
+			if (s.st_mode & S_IFDIR) {
+				Log(log_Detail, "helper.cpp", "isFile", "      Path is an existing file.", path.c_str());
+				return true;
+			}
+
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "isFile", "      Failed to check path: %s", e.what() ) ;
+	}
+
+	Log(log_Warning, "helper.cpp", "isFile", "      Path '%s is a not an existing file!", path.c_str() );
+	return false;
+
+}
+
+int fileSize(string filename){
+
+    struct stat s;
+
+    try {
+        if (stat(filename.c_str(), &s) == 0)
+            return (intmax_t) s.st_size;
+
+    }catch(const std::exception& e){
+        Log(log_Error, "helper.cpp", "fileSize", "      Failed to get file size of %s", e.what() ) ;
+    }
+
+   return 0;
+
 
 }
 
 bool isFolder(string path){
 
 	struct stat s;
-	Log(log_Debug, "helper.cpp", "isFolder", "   Checking path ...");
+	Log(log_Detail, "helper.cpp", "isFolder", "   Checking path '%s'...", path.c_str());
 
 	try {
 		if (stat(path.c_str(), &s) == 0)
 			if (s.st_mode & S_IFDIR) {
-				Log(log_Debug, "helper.cpp", "isFolder", "      Path '%s' is a folder.", path.c_str());
+				Log(log_Detail, "helper.cpp", "isFolder", "      Done. Path is an existing folder.", path.c_str());
 				return true;
 			}
 
-	}catch(exception e){
-		Log(log_Error, "helper.cpp", "isFolder", "      Failed to check path: %s", string(e.what()) ) ;
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "isFolder", "      Failed to check path: %s", e.what() ) ;
 	}
 
+    Log(log_Warning, "helper.cpp", "isFolder", "      Path '%s' is not an existing folder!",  path.c_str());
 	return false;
+
+}
+
+string getFileName(string path){
+
+	char * s;
+
+	try {
+
+		char * f = strdup(path.c_str());
+		s = basename(f);
+
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "getFileName", "      Failed to get file name from path: %s", e.what() ) ;
+	}
+
+	return s;
+
+}
+
+string getFolderName(string path){
+
+	char * s;
+
+	try {
+
+		char * d = strdup(path.c_str());
+		s = dirname(d);
+
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "getFolderName", "      Failed to get folder name from path: %s", e.what() ) ;
+	}
+
+	return s;
+}
+
+string replace(string str, string from, string to){
+
+	const char * s;
+
+	try {
+
+        if(!from.empty()){}
+
+            size_t start_pos = 0;
+            while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+                str.replace(start_pos, from.length(), to);
+                start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+            }
+
+        s = str.c_str();
+
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "getFolderName", "      Failed to replace string: %s", e.what() ) ;
+	}
+
+	return s;
+}
+
+void addFilesToList(vector<string> & list, string startPath){
+
+    struct dirent * ent;
+
+    DIR * item = opendir(startPath.c_str());
+
+    while ((ent = readdir(item)) != NULL) {
+
+		string name = ent->d_name;
+		string fullname = startPath.c_str() + name;
+
+        struct stat s;
+
+        if (stat(fullname.c_str(), &s) == 0){
+			if(name[0] !='.'){
+				if (s.st_mode & S_IFDIR) {
+					addFilesToList(list, fullname + "/");
+				}else{
+					list.push_back(fullname);
+				}
+	        }
+        }
+    }
+
+    closedir(item);
 
 }
 
 vector<string> listFiles(string folder){
 
-	Log(log_Debug, "helper.cpp", "listFiles", "   Listing files...");
+	Log(log_Detail, "helper.cpp", "listFiles", "   Listing files from folder '%s'...", folder.c_str());
 
 	vector<string> res;
 
 	try{
+        addFilesToList(res, folder);
 
-		DIR * path;
-		struct dirent *ent;
-		path = opendir(folder.c_str());
-		while ((ent = readdir(path)) != NULL) {
-			string filename = ent->d_name;
-			string file = folder.c_str() + filename;
-			if (filename[0] == '.')
-				continue;
+		Log(log_Detail, "helper.cpp", "listFiles", "      Done. Found %i files.", res.size());
 
-			struct stat s;
-			if (stat(file.c_str(), &s) == 0)
-				if (s.st_mode & S_IFDIR)
-					continue;
-
-			res.push_back(filename);
-			Log(log_Debug, "helper.cpp", "listFiles", "         %s", file.c_str());
-
-		}
-		closedir(path);
-
-		int fileCount = res.size();
-
-		Log(log_Debug, "helper.cpp", "listFiles", "      %i files were found.", fileCount);
-
-	}catch(exception e){
-		Log(log_Error, "helper.cpp", "listFiles",  "      Failed to list files: %s", string(e.what()) ) ;
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "listFiles",  "      Error listing files: %s", e.what() ) ;
 	}
 
 	return res;
@@ -108,45 +230,36 @@ vector<string> listFiles(string folder){
 
 vector<string> loadImages(string filename){
 
-	Log(log_Debug, "helper.cpp", "loadImage", "   Loading image(s) from file...");
+	Log(log_Detail, "helper.cpp", "loadImage", "   Loading image(s) from file...");
 
 	try{
 		int imageCount = 0;
 
 
-		Log(log_Debug, "helper.cpp", "loadImage", "      %i images were loaded.", imageCount );
+		Log(log_Detail, "helper.cpp", "loadImage", "      %i images were loaded.", imageCount );
 
-	}catch(exception e){
-		Log(log_Error, "helper.cpp", "loadImage","      Failed to load image(s): %s", string(e.what()) ) ;
+	}catch(const std::exception& e){
+		Log(log_Error, "helper.cpp", "loadImage","      Failed to load image(s): %s", e.what() ) ;
 	}
 
 }
 
-unsigned GetTickCount()
-{
+//---------------------------------------------------------------------------------------------------------------------------
+int64 getTick(){
+	return getTickCount();
+}
+double getDif(int64 startTick){
+	return (double) (getTick() - startTick) / getTickFrequency();
+}
+string getDifString(int64 startTick){
 
-	//LINUX-----------------------------------------------------------------------------------------------------------------------------
-    struct timeval tv;
-    if(gettimeofday(&tv, NULL) != 0)
-       return 0;
-
-	return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-
-	//LINUX-----------------------------------------------------------------------------------------------------------------------------
+	double d = (getTick() - startTick) / getTickFrequency();
+	string s(16, '\0');
+	auto w = snprintf(&s[0], s.size(), "%.2f", d);
+	s.resize(w);
+	return s;
 
 }
-
-string getElapsedTime(unsigned fromTime){
-
-	//LINUX-----------------------------------------------------------------------------------------------------------------------------
-
-	//WINDOWS-----------------------------------------------------------------------------------------------------------------------------
-
-	//return GetTickCount() - fromTime;
-
-	return 0;
-
-};
 
 string getCurrentTimeStamp(){
 

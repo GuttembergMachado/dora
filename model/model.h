@@ -1,32 +1,15 @@
 #ifndef MODELS_H
 #define MODELS_H
 
-#include <string>
-#include <vector>
+#include <opencv2/features2d/features2d.hpp>  //FeatureDetector, DescriptorExtractor, BOWTrainer, DescriptorMatcher
+#include <opencv2/xfeatures2d/nonfree.hpp>   //SiftFeatureDetector, SiftDescriptorExtractor, SurfFeatureDetector, SurfDescriptorExtractor
 
 #include "../tools/helper.h"
-
-//#include "opencv2/highgui/highgui.hpp"
-//#include "opencv2/imgproc/imgproc.hpp"
-
-//#include <Windows.h>
-//#include "log.h"
-//#include "helper.h"
-//#include "document.h"
-//#include "preprocessor.h"
-//#include "xycut.h"
+#include "sample.h"
 
 using namespace std;
-
-//class Sample{
-//public:
-//	Sample(string sample_label, string sample_filename, Mat sample_XCut, Mat sample_YCut );
-//	string			label;
-//	string			filename;
-//	Mat				xCut;
-//	Mat				yCut;
-//};
-
+using namespace cv;
+using namespace xfeatures2d;
 enum enumModels
 {
 	model_PROJECTION = 0,
@@ -35,36 +18,51 @@ enum enumModels
 
 enum enumFeatures
 {
-	feature_SIFT = 0,	//Scale Invariant Feature Transform				
-	feature_SURF = 1,   //Speeded Up Robust Features
-	feature_LBP = 2,    //Local Binary Patters
+	feature_SIFT = 0,	//Scale Invariant Feature Transform (* patented)
+	feature_SURF = 1,   //Speeded Up Robust Features (* patented)
+	feature_LBP = 2,    //Local Binary Patterns
 	feature_FAST = 3,   //Feature From Accelerated Segment Tests
 	feature_BRIEF = 4,  //Binary Robust Independent Elementary Features
 	feature_ORB = 5,    //Oriented Fast & Rotated BRIEF
+    feature_START = 6,  //
+    feature_MSER = 7,   //
+    feature_GFTT = 8,   //Good Features To Track Detector
+    feature_HARRIS = 9, //Good Features To Track Detector with HARRIS detector
+    feature_DENSE = 10, //
+    feature_BLOB = 11,  //
 };
 
-enum enumMatching
+enum enumMatchers
 {
-	matching_BRUTE_FORCE = 0,
-	matching_FLANN = 1,					// Fast Library for Approximating Nearest Neighbors
-	matching_K_MEANS_CLUSTERING = 2,
+	matcher_BRUTE_FORCE = 0,
+	matcher_FLANN = 1,					// Fast Library for Approximating Nearest Neighbors
+	matcher_K_MEANS_CLUSTERING = 2,
 };
 
 class Model {
+    vector<Sample>	            samples;
+	bool                        initializeModules();
+	bool                        initializeDictionary();
+    Ptr<FeatureDetector>        detector;
+    Ptr<DescriptorExtractor>    extractor;
+    Ptr<BOWTrainer>	            trainer;
+    Ptr<DescriptorMatcher>      matcher;
+	Mat							dictionary;
+    int					        dictionarySize;
 public:
-	string source;
-	string filename;
-	enumModels classificationModel;
-	enumFeatures featureType;
-	enumMatching matchingModel;
-
-	bool createModel();
-
-	bool loadModel();
-
-	bool saveModel();
-
-	void dumpModel();
-
+	enumModels       classificationModel;
+	enumFeatures     featureType;
+    enumMatchers     matcherModel;
+    enumBinarization binarizationMethod;
+    string           getModelName();
+    string           getFeatureName();
+    string           getMatcherName();
+    string           getBinarizationName();
+	string 			 name;
+	string 			 filename;
+	string 			 folder;
+	bool             create(string sampleFolder);
+	bool             load();
+	bool             save();
 };
 #endif
