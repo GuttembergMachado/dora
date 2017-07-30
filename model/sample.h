@@ -1,5 +1,5 @@
 //
-// Created by gutto on 24/07/17.
+// Guttemberg Machado on 24/07/17.
 //
 
 #ifndef SAMPLE_H

@@ -1,3 +1,7 @@
+#
+#Guttemberg Machado on 24/07/17.
+#
+
 cmake_minimum_required(VERSION 3.7)
 project(dora)
 

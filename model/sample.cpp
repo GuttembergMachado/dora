@@ -1,3 +1,6 @@
+//
+// Guttemberg Machado on 24/07/17.
+//
 #include "sample.h"
 
 void Sample::fixJPEG(string filename){

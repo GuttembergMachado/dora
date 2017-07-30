@@ -1,3 +1,6 @@
+//
+// Guttemberg Machado on 24/07/17.
+//
 #ifndef HELPER_H
 #define HELPER_H
 

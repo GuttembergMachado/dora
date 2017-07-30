@@ -1,3 +1,6 @@
+//
+// Guttemberg Machado on 24/07/17.
+//
 #include "model.h"
 
 bool Model::create(string sampleFolder){

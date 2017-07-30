@@ -1,3 +1,6 @@
+//
+// Guttemberg Machado on 24/07/17.
+//
 #include "binarization.h"
 
 #include "opencv2/highgui/highgui.hpp"

@@ -1,3 +1,6 @@
+//
+// Guttemberg Machado on 24/07/17.
+//
 #include <iostream>
 #include "./tools/helper.h"
 #include "./model/model.h"

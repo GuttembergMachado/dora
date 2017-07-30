@@ -25,3 +25,8 @@ Usage:
        dora -c 'c:/docs/doc.jpg' 'c:/docs/model.xml'
        dora -c 'c:/docs' 'c:/docs/model.xml'
        dora -c 'c:/docs/*.png' 'c:/docs/model.xml'
+
+
+Sample images or models are not provided
+    
+    
