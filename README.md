@@ -1,10 +1,13 @@
- 
-    **Dora** is a document classifier. It is a supervised machine learning that uses opencv combined with other techniques. Written originally in VC++. This repo is a non-functional linux port.
+ #Dora (Document Object Recognition and Analysis)
     
-    It is a console application and there's no setup required, but OpenCV should be installed.
+    **Dora** is a document classifier. It is a supervised machine learning trainer and classifier used to classify scanned document images, document pictures and video frames of documents. There is serveral different techniques and algorithms implemented on its VC++ version. This repo is the first try out of a linux port.
     
+    Dora is a console application and there's no setup required, but it requires opencv.
+    
+```
  Usage:
    options:
+   
       -h      	Displays this information.
       -m      	Modeler Mode. Used to train a model.
       -c      	Classifier Mode; Used to classify a document.
