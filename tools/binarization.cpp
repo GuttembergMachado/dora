@@ -4,6 +4,7 @@
 #include "binarization.h"
 
 #include "opencv2/highgui/highgui.hpp"
+#include "helper.h"
 
 //  CV_8U  = uchar
 //  CV_8S  = schar
@@ -276,17 +277,23 @@ bool binarize(Mat sourceMat, Mat destMat, enumBinarization method){
 
     switch (method) {
 
-        case binarization_TRESHOLD:{
-            threshold(sourceMat, destMat, 127, 255, THRESH_BINARY);
+        case binarization_TRESHOLD:
+        {
+            if (sourceMat.channels() == 1)
+                threshold(sourceMat, destMat, 127, 255, THRESH_BINARY);
+            else
+                Log(log_Debug, "binarization.cpp", "binarize", "Error: SourceMat is not grayscale.");
         }
         break;
 
-        case binarization_MEAN:{
+        case binarization_MEAN:
+        {
             adaptiveThreshold(sourceMat, destMat, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,11,2);
         }
         break;
 
-        case binarization_GAUSSIAN:{
+        case binarization_GAUSSIAN:
+        {
             adaptiveThreshold(sourceMat, destMat, 255, ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,2);
         }
         break;
@@ -301,26 +308,36 @@ bool binarize(Mat sourceMat, Mat destMat, enumBinarization method){
         break;
 
         case binarization_NIBLACK:
+        {
             K = 0.2;
             NiblackSauvolaWolfJolion(~sourceMat, destMat, binarization_NIBLACK, winX, winY, K, 128);
             destMat = ~destMat;
-            break;
+        }
+        break;
 
         case binarization_SAUVOLA:
+        {
             K = 0.5;
             NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_SAUVOLA, winX, winY, K, 128);
+        }
             break;
 
         case binarization_WOLFJOLION:
+        {
             K = 0.5;
             NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_WOLFJOLION, winX, winY, K, 128);
-            break;
+        }
+        break;
 
         case binarization_BRADLEY:
+        {
             K = 0.15;
             if (sourceMat.channels() == 1)
                 bradley_Binarization(sourceMat, destMat, (float) K);
-            break;
+            else
+                Log(log_Debug, "binarization.cpp", "binarize", "Error: SourceMat is not grayscale.");
+        }
+        break;
     }
 
     if(destMat.rows > 0 && destMat.cols > 0 && destMat.channels() == 1)

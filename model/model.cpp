@@ -42,44 +42,49 @@ bool Model::create(string sampleFolder){
 
                 Log(log_Debug, "model.cpp", "create", "   Creating auxiliary mats...");
                 startSubtask = getTick();
-                for (int i = 0; i < samples.size(); i++) {
+                int i;
+                for (i = 0; i < samples.size(); i++) {
 
-                    samples[i].create_grayscale();
-                    samples[i].create_binary(binarizationMethod);
+                    //Creates grayscale mat of the sample
+                    if(!samples[i].create_grayscale())
+                        break;
 
-                    //--------------------------------------------------------------------------------------------------
-                    Log(log_Debug, "model.cpp", "create", " %s", samples[i].filename.c_str());
-                    namedWindow("0-ORIGINAL", CV_WINDOW_AUTOSIZE );
-                    imshow("0-ORIGINAL", samples[i].originalMat);
-                    Log(log_Debug, "model.cpp", "create", " %s", samples[i].filename.c_str());
-
-                    //--------------------------------------------------------------------------------------------------
+                    //Creates monochromatic mat of the grayscale sample
+                    if(!samples[i].create_binary(binarizationMethod))
+                        break;
 
                 }
-                Log(log_Debug, "model.cpp", "create", "      Done. Auxiliary mats were created in %s seconds.", getDifString(startSubtask).c_str());
+                if(i == samples.size()) {
+                    Log(log_Debug, "model.cpp", "create", "         Auxiliary mats were created in %s seconds.", getDifString(startSubtask).c_str());
 
-
-                Log(log_Debug, "model.cpp", "create", "   Initializing modules...");
-                startSubtask = getTick();
-                if(initializeModules()){
-                    Log(log_Debug, "model.cpp", "create", "      Done. Modules initialized in %s seconds.",  getDifString(startSubtask).c_str());
-
-                    Log(log_Debug, "model.cpp", "create", "   Initializing dictionary...");
+                    Log(log_Debug, "model.cpp", "create", "   Initializing modules...");
                     startSubtask = getTick();
-                    if(initializeDictionary()){
-                        Log(log_Debug, "model.cpp", "create", "      Done. Dictionary was created in %s seconds.",  getDifString(startSubtask).c_str());
+                    if (initializeModules()) {
+                        Log(log_Debug, "model.cpp", "create", "      Done. Modules initialized in %s seconds.", getDifString(startSubtask).c_str());
+
+                        Log(log_Debug, "model.cpp", "create", "   Initializing dictionary..."); startSubtask = getTick();
+                        if (initializeDictionary()) {
+                            Log(log_Debug, "model.cpp", "create", "      Done. Dictionary was created in %s seconds.", getDifString(startSubtask).c_str());
 
 
+                            //TODO
+                            //TODO
+                            //TODO
+                            //TODO: Contiuar o port....
+                            //TODO
+                            //TODO
+                            //TODO
 
 
+                            Log(log_Error, "model.cpp", "create", "   Model was created successuflly in %s seconds.", getDifString(startTask).c_str());
+                            return true;
 
-                        Log(log_Error, "model.cpp", "create", "   Model was created successuflly in %s seconds.", getDifString(startTask).c_str());
-                        return true;
-
-                    }else
-                        Log(log_Error, "model.cpp", "create", "   Failed to initialize dictionary!");
-                }else
-                    Log(log_Error, "model.cpp", "create", "   Failed to initialize modules!");
+                        } else
+                            Log(log_Error, "model.cpp", "create", "   Failed to initialize dictionary!");
+                    } else
+                        Log(log_Error, "model.cpp", "create", "   Failed to initialize modules!");
+                } else
+                    Log(log_Debug, "model.cpp", "create", "   Failed to create auxiliary mat for sample %i.", (i+1));
             }else
                 Log(log_Error, "model.cpp", "create", "   Failed to find sample folder '%s'", sampleFolder.c_str() );
         }else
@@ -176,7 +181,7 @@ bool Model::initializeModules(){
         switch (featureType)
         {
             case feature_SIFT: {
-                detector = new SiftFeatureDetector();
+                detector = makePtr(SiftFeatureDetector);  // was: = new SiftFeatureDetector();
                 extractor = new SiftDescriptorExtractor();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;

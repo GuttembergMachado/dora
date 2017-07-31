@@ -66,9 +66,7 @@ bool Sample::create_binary(enumBinarization binMethod){
     try{
         Log(log_Detail, "sample.cpp", "create_binary", "      Creating binary mat from original mat...");
 
-        binarize(grayMat, binaryMat, binMethod);
-
-        if (binaryMat.rows > 0 && binaryMat.cols > 0 && binaryMat.channels() == 1) {
+        if(binarize(grayMat, binaryMat, binMethod)) {
             Log(log_Detail, "sample.cpp", "create_binary", "      Binary mat created.");
             return true;
         }

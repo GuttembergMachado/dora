@@ -31,7 +31,7 @@ int main(int argc, char **argv){
         mod.classificationModel = model_BAG_OF_FEATURES;
         mod.featureType  = feature_SIFT;
         mod.matcherModel = matcher_FLANN;
-        mod.binarizationMethod = binarization_CLAHE;// binarization_WOLFJOLION; //binarization_BRADLEY;
+        mod.binarizationMethod = binarization_TRESHOLD ;//binarization_CLAHE;// binarization_WOLFJOLION; //binarization_BRADLEY;
         mod.name = getFileName(model);
         mod.filename = model;
         mod.folder = getFolderName(model);
@@ -129,7 +129,9 @@ int main(int argc, char **argv){
 
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
 
-    system("read");
+    //system("read");
+    Log(log_Error, "main.cpp", "main", "Press any key to exit");
+    getchar();
 
     //Encerra o programa
     return 0;
