@@ -181,9 +181,10 @@ bool Model::initializeModules(){
         switch (featureType)
         {
             case feature_SIFT: {
-                detector = makePtr(SiftFeatureDetector);  // was: = new SiftFeatureDetector();
-                extractor = new SiftDescriptorExtractor();
+                detector =  SiftFeatureDetector::create();      //makePtr<SiftFeatureDetector>();       // was: = new SiftFeatureDetector();
+                extractor = SiftDescriptorExtractor::create();  //makePtr<SiftDescriptorExtractor>()    // was: = new SiftDescriptorExtractor();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
+
                 break;
             }
             case feature_SURF:
