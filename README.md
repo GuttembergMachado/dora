@@ -82,5 +82,6 @@ The following algorithms are implemented:
 Most of the algorithms used are actually provided by opencv, except by **Matrix Deviation** and **XYCut Projection as Feature**, in which I am working on and hopefully show good results. Most of the opencv's algorithms are open-sourced, but since a few of them are patented, check the licenses before using them.
 
 
-
-Sample images or models are not provided.
+### Sample images
+- Deck of cards (courtesy of) https://code.google.com/archive/p/vector-playing-cards/
+- 

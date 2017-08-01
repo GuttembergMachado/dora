@@ -231,14 +231,14 @@ bool Model::loadDictionary() {
 
     int64 startTask = getTick();
 
-    Log(log_Debug, "model.cpp", "initializeDictionary", "      Loading existing dictionary...");
+    Log(log_Debug, "model.cpp", "loadDictionary", "      Loading existing dictionary...");
 
     //Load dictionary from file
     FileStorage fs(filename, FileStorage::READ);
     fs["dictionary"] >> dictionary;
     fs.release();
 
-    Log(log_Debug, "model.cpp", "create", "         Done. Dictionary was loaded in %s seconds.", getDifString(startTask).c_str());
+    Log(log_Debug, "model.cpp", "loadDictionary", "         Done. Dictionary was loaded in %s seconds.", getDifString(startTask).c_str());
     return true;
 
 }
@@ -248,7 +248,7 @@ bool Model::createDictionary() {
     int64 startTask = getTick();
     int64 startSubtask;
 
-    Log(log_Debug, "model.cpp", "initializeDictionary", "      Creating a new dictionary based on the %i samples found...", samples.size());
+    Log(log_Debug, "model.cpp", "createDictionary", "      Creating a new dictionary based on the %i samples found...", samples.size());
     startSubtask = getTick();
 
     vector<KeyPoint> keypoints;
@@ -261,49 +261,50 @@ bool Model::createDictionary() {
         //Check if the original mat exists
         if (m.rows > 1 && m.cols > 1) {
 
-            Log(log_Detail, "model.cpp", "initializeDictionary", "         sample %05d ('%s'):", (i + 1),samples[i].filename.c_str());
+            Log(log_Detail, "model.cpp", "createDictionary", "         sample %05d ('%s'):", (i + 1),samples[i].filename.c_str());
 
             //Get the keypoints
-            Log(log_Detail, "model.cpp", "initializeDictionary", "            Extracting features (key points)...");
+            Log(log_Detail, "model.cpp", "createDictionary", "            Extracting features (key points)...");
             detector->detect(m, keypoints);
 
             //Get the descriptors for each keypoint
-            Log(log_Detail, "model.cpp", "initializeDictionary", "            Computing descriptors from features (key points)...");
+            Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features (key points)...");
             extractor->compute(m, keypoints, descriptor);
 
             //Adds the descriptor to the trainer
-            Log(log_Detail, "model.cpp", "initializeDictionary", "            Adding descriptors...");
-            trainer->add(descriptor);
+            Log(log_Detail, "model.cpp", "createDictionary", "            Adding %i descriptors...", descriptor.size());
+            if (!descriptor.empty())
+                trainer->add(descriptor);
 
         } else {
-            Log(log_Warning, "model.cpp", "initializeDictionary","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
+            Log(log_Warning, "model.cpp", "createDictionary","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
         }
     }
-    Log(log_Debug, "model.cpp", "create", "      Done loading all %i samples in %s seconds.", samples.size(), getDifString(startSubtask).c_str());
+    Log(log_Debug, "model.cpp", "createDictionary", "      Done loading all %i samples in %s seconds.", samples.size(), getDifString(startSubtask).c_str());
 
     //Did processing the samples find anything usefull?
     if (trainer->descriptorsCount() > 0){
 
-        Log(log_Debug, "model.cpp", "initializeDictionary", "      Clustering features (choosing centroids as words) out of all %i descriptors found...", trainer->descriptorsCount());
+        Log(log_Debug, "model.cpp", "createDictionary", "      Clustering features (choosing centroids as words) out of all %i descriptors found...", trainer->descriptorsCount());
         startSubtask = getTick();
         //Cluster (use the centroid of each cluster as the words of the dictionary)
         dictionary = trainer->cluster();
-        Log(log_Debug, "model.cpp", "initializeDictionary", "         Done loading features in %s seconds.", getDifString(startSubtask).c_str());
+        Log(log_Debug, "model.cpp", "createDictionary", "         Done loading features in %s seconds.", getDifString(startSubtask).c_str());
 
-        Log(log_Debug, "model.cpp", "initializeDictionary", "      Saving dictionary on file '" + filename + "'...");
+        Log(log_Debug, "model.cpp", "createDictionary", "      Saving dictionary on file '" + filename + "'...");
         startSubtask = getTick();
         //Saves
         FileStorage fs(filename, FileStorage::WRITE);
         fs << "dictionary" << dictionary;
         fs.release();
-        Log(log_Debug, "model.cpp", "initializeDictionary", "         Done saving dictionary file in %s seconds.",  getDifString(startSubtask).c_str());
+        Log(log_Debug, "model.cpp", "createDictionary", "         Done saving dictionary file in %s seconds.",  getDifString(startSubtask).c_str());
 
 
-        Log(log_Debug, "model.cpp", "create", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
+        Log(log_Debug, "model.cpp", "createDictionary", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
         return true;
 
     }else
-        Log(log_Error, "model.cpp", "initializeDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
+        Log(log_Error, "model.cpp", "createDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
 
     return false;
 
