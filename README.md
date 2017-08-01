@@ -47,11 +47,11 @@ There are a few undocumented parameters used to choose the algorithms used, and 
 The following algorithms are implemented:
 
 
-####Trainer Algorithm: 
+#### Trainer Algorithm: 
 - **Bag of Words** (It's actually a Bag of Image Features) *(default)*
 - Matrix Deviation (actually being tested)
      
-####Image Features: 
+#### Image Features: 
 - **Scale Invariant Feature Transform** *(default)*
 - XYCut Projection as features (actually being tested) 
 - Speeded Up Robust Features 
@@ -61,11 +61,11 @@ The following algorithms are implemented:
 - Oriented Fast & Rotated Binary Robust Features 
 - Good Features To Track Detector 
    
-####Matcher Algorithms:
+#### Matcher Algorithms:
 - **Fast Library for Approximating Nearest Neighbors** *(default)*
 - Brute Force (actually being tested)
    
-####Binarization Algorithm 
+#### Binarization Algorithm 
 - **Derek Bradley's algorithm** *(default)*
 - Regular Tresholding
 - Mean Tresholding
