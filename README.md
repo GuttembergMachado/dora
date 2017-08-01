@@ -12,13 +12,13 @@ Dora is a console application and although there's no setup required, it does re
 Dora can be used in two distinct modes: **Modeler** and **Classifier**. 
 
 
-##Modeler mode
+## Modeler mode
  This is the part that actually learns from image samples previously classified.
 
  **Modeler mode** requires a folder with several samples. In order to "teach" dora what a sample is, similar samples must be within the same folder. (eg: all social security images must be inside a folder, while all drivers licenses must be on a different folder). Each folder correspond to a **label**. Usually large sets of samples produces better classification, but it takes longer to learn. After processing the samples, a  **model** is created and saved as a file. This model is used later on used to classify images on Classifier mode.
 
 
-##Classifier Mode
+## Classifier Mode
  This is the part that uses whatever was learned to classify a real image.
 
  The **Classifier mode** requires an input set, that can be a single image file, a multi-image file (such as tiff, pdfs, etc) or a folder with those files, and after processing it returns a LABEL for each image.   
