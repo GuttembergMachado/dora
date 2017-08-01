@@ -11,16 +11,15 @@ bool Model::create(string sampleFolder){
 
         vector<string> files;
 
-        //Verifica se é uma pasta
+        //Is the input folder actually an existing folder?
         if(isFolder(sampleFolder)) {
 
-            //Carrega os arquivos da pasta
+            //Load all files recursivelly
             files = listFiles(sampleFolder);
 
-            //Verifica se tem ao menos um arquivo
+            //Is there at least one image file?
             if (files.size() > 0){
 
-                //Zera os samples
                 samples.clear();
 
                 Log(log_Debug, "model.cpp", "create", "   Loading sample files...");
@@ -29,62 +28,65 @@ bool Model::create(string sampleFolder){
 
                     Sample s;
 
-                    //Carrega a imagem
+                    //Loads the sample
                     if (s.load(files[i])){
+
+                        //Creates grayscale mat of the sample
+                        if(!s.create_grayscale())
+                            break;
+
+                        //Creates monochromatic mat of the grayscale sample
+                        if(!s.create_binary(binarizationMethod))
+                            break;
+
+                        //Creates XYCut images
+                        if(!s.create_XYCut())
+                            break;
+
+                        if(saveIntermediateFiles)
+                            s.saveIntermediate(folder, true, true, true,true,true);
+
+                        //Uses the folder as the label identifing the sample
                         s.label = replace(getFolderName(s.filename), sampleFolder, "");
-                        s.dump();
+
                         samples.push_back(s);
+                        s.dump();
                     }
 
                 }
                 Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples in %s seconds.", samples.size() , getDifString(startSubtask).c_str());
 
-
-                Log(log_Debug, "model.cpp", "create", "   Creating auxiliary mats...");
-                startSubtask = getTick();
-                int i;
-                for (i = 0; i < samples.size(); i++) {
-
-                    //Creates grayscale mat of the sample
-                    if(!samples[i].create_grayscale())
-                        break;
-
-                    //Creates monochromatic mat of the grayscale sample
-                    if(!samples[i].create_binary(binarizationMethod))
-                        break;
-
-                }
-                if(i == samples.size()) {
-                    Log(log_Debug, "model.cpp", "create", "         Auxiliary mats were created in %s seconds.", getDifString(startSubtask).c_str());
+                //Did we manage to load any file at all?
+                if(samples.size() > 0) {
 
                     Log(log_Debug, "model.cpp", "create", "   Initializing modules...");
                     startSubtask = getTick();
+
+                    //Initialize main modules (trainer, feature extractor, binarization, etc...)
                     if (initializeModules()) {
                         Log(log_Debug, "model.cpp", "create", "      Done. Modules initialized in %s seconds.", getDifString(startSubtask).c_str());
 
-                        Log(log_Debug, "model.cpp", "create", "   Initializing dictionary..."); startSubtask = getTick();
-                        if (initializeDictionary()) {
-                            Log(log_Debug, "model.cpp", "create", "      Done. Dictionary was created in %s seconds.", getDifString(startSubtask).c_str());
+                        //Do we need to create a dictionary?
+                        if(!isFile(filename))
+                            createDictionary();
+                        else
+                            loadDictionary();
 
+                        //TODO
+                        //TODO
+                        //TODO
+                        //TODO: Continue porting....
+                        //TODO
+                        //TODO
+                        //TODO
 
-                            //TODO
-                            //TODO
-                            //TODO
-                            //TODO: Contiuar o port....
-                            //TODO
-                            //TODO
-                            //TODO
+                        Log(log_Error, "model.cpp", "create", "   Done creating model in %s seconds.", getDifString(startTask).c_str());
+                        return true;
 
-
-                            Log(log_Error, "model.cpp", "create", "   Model was created successuflly in %s seconds.", getDifString(startTask).c_str());
-                            return true;
-
-                        } else
-                            Log(log_Error, "model.cpp", "create", "   Failed to initialize dictionary!");
                     } else
                         Log(log_Error, "model.cpp", "create", "   Failed to initialize modules!");
                 } else
-                    Log(log_Debug, "model.cpp", "create", "   Failed to create auxiliary mat for sample %i.", (i+1));
+                    Log(log_Debug, "model.cpp", "create", "   No samples found.");
             }else
                 Log(log_Error, "model.cpp", "create", "   Failed to find sample folder '%s'", sampleFolder.c_str() );
         }else
@@ -104,9 +106,8 @@ bool Model::load(){
         if (isFile(filename)){
             Log(log_Debug, "model.cpp", "load", "   Loading model file...");
 
-            //Lê o modelo
+            //Reads the model
             //svm.load(filename.c_str());
-            //
             string trainingSetFile = filename + "_trainingSetFile.xml";
 
             if (isFile(trainingSetFile)){
@@ -154,10 +155,12 @@ bool Model::save(){
 bool Model::initializeModules(){
 
     try{
-        //Valores defaults
+
+        //TODO: Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
         dictionarySize = 1500;
 
-        //Inicializa os objetos do modelo
+        //TODO: ALL THE 'initialize functions' from OPENCV changed from version 2.x to 3.x.  CHECK THIS CAREFULLY
+
         Log(log_Error, "model.cpp", "initialize", "      Initializing trainer module: '" + getModelName() + "'...");
         switch (classificationModel)
         {
@@ -174,15 +177,14 @@ bool Model::initializeModules(){
                 return false;
             }
 
-       }
+        }
 
-        //Inicializa os objetos das features
         Log(log_Error, "model.cpp", "initialize", "      Initializing detector module: '" + getFeatureName() + "'...");
         switch (featureType)
         {
             case feature_SIFT: {
-                detector =  SiftFeatureDetector::create();      //makePtr<SiftFeatureDetector>();       // was: = new SiftFeatureDetector();
-                extractor = SiftDescriptorExtractor::create();  //makePtr<SiftDescriptorExtractor>()    // was: = new SiftDescriptorExtractor();
+                detector =  SiftFeatureDetector::create();      //or makePtr<SiftFeatureDetector>();       //it was (on opencv 2.x): = new SiftFeatureDetector();
+                extractor = SiftDescriptorExtractor::create();  //or makePtr<SiftDescriptorExtractor>()    //it was (on opencv 2.x): = new SiftDescriptorExtractor();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
 
                 break;
@@ -202,11 +204,11 @@ bool Model::initializeModules(){
                 return false;
         }
 
-        //Inicializa os objetos do Matcher
         Log(log_Error, "model.cpp", "initialize", "      Initializing matcher module: '" + getMatcherName() + "'...");
         switch (matcherModel)
         {
             case matcher_FLANN: {
+                //TODO: Isso aqui mudou! Alterar
                 matcher = new FlannBasedMatcher();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
@@ -225,88 +227,83 @@ bool Model::initializeModules(){
 
 }
 
-bool Model::initializeDictionary() {
+bool Model::loadDictionary() {
+
+    int64 startTask = getTick();
+
+    Log(log_Debug, "model.cpp", "initializeDictionary", "      Loading existing dictionary...");
+
+    //Load dictionary from file
+    FileStorage fs(filename, FileStorage::READ);
+    fs["dictionary"] >> dictionary;
+    fs.release();
+
+    Log(log_Debug, "model.cpp", "create", "         Done. Dictionary was loaded in %s seconds.", getDifString(startTask).c_str());
+    return true;
+
+}
+
+bool Model::createDictionary() {
 
     int64 startTask = getTick();
     int64 startSubtask;
 
-    //-------------------------------------------------------------------
-    //Verifica se é para carregar o arquivo de treinamento
-    if (isFile(filename)){
+    Log(log_Debug, "model.cpp", "initializeDictionary", "      Creating a new dictionary based on the %i samples found...", samples.size());
+    startSubtask = getTick();
 
-        Log(log_Debug, "model.cpp", "initializeDictionary", "      Found an existing model file ('%s'). Loading dictionary from it...");
+    vector<KeyPoint> keypoints;
+    Mat descriptor;
+
+    for (int i = 0; i < samples.size(); i++) {
+
+        Mat m = samples[i].grayMat;
+
+        //Check if the original mat exists
+        if (m.rows > 1 && m.cols > 1) {
+
+            Log(log_Detail, "model.cpp", "initializeDictionary", "         sample %05d ('%s'):", (i + 1),samples[i].filename.c_str());
+
+            //Get the keypoints
+            Log(log_Detail, "model.cpp", "initializeDictionary", "            Extracting features (key points)...");
+            detector->detect(m, keypoints);
+
+            //Get the descriptors for each keypoint
+            Log(log_Detail, "model.cpp", "initializeDictionary", "            Computing descriptors from features (key points)...");
+            extractor->compute(m, keypoints, descriptor);
+
+            //Adds the descriptor to the trainer
+            Log(log_Detail, "model.cpp", "initializeDictionary", "            Adding descriptors...");
+            trainer->add(descriptor);
+
+        } else {
+            Log(log_Warning, "model.cpp", "initializeDictionary","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
+        }
+    }
+    Log(log_Debug, "model.cpp", "create", "      Done loading all %i samples in %s seconds.", samples.size(), getDifString(startSubtask).c_str());
+
+    //Did processing the samples find anything usefull?
+    if (trainer->descriptorsCount() > 0){
+
+        Log(log_Debug, "model.cpp", "initializeDictionary", "      Clustering features (choosing centroids as words) out of all %i descriptors found...", trainer->descriptorsCount());
         startSubtask = getTick();
+        //Cluster (use the centroid of each cluster as the words of the dictionary)
+        dictionary = trainer->cluster();
+        Log(log_Debug, "model.cpp", "initializeDictionary", "         Done loading features in %s seconds.", getDifString(startSubtask).c_str());
 
-        //Lê o dicionário do arquivo
-        FileStorage fs(filename, FileStorage::READ);
-        fs["dictionary"] >> dictionary;
-        //fs["trainingData"] >> trainingData;
-        //fs["labels"] >> labels;
-        //fs["trainingLabel"] >> trainingLabel;
+        Log(log_Debug, "model.cpp", "initializeDictionary", "      Saving dictionary on file '" + filename + "'...");
+        startSubtask = getTick();
+        //Saves
+        FileStorage fs(filename, FileStorage::WRITE);
+        fs << "dictionary" << dictionary;
         fs.release();
+        Log(log_Debug, "model.cpp", "initializeDictionary", "         Done saving dictionary file in %s seconds.",  getDifString(startSubtask).c_str());
 
-        Log(log_Debug, "model.cpp", "create", "      Done. Dictionary was initialized from model file in %s seconds.",  getDifString(startSubtask).c_str());
+
+        Log(log_Debug, "model.cpp", "create", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
         return true;
 
-    }else {
-
-        Log(log_Debug, "model.cpp", "initializeDictionary", "      Creating a dictionary based on the %i samples found...", samples.size());
-        startSubtask = getTick();
-
-        vector<KeyPoint> keypoints;
-        Mat descriptor;
-
-        for (int i = 0; i < samples.size(); i++) {
-
-            Mat m = samples[i].grayMat;
-
-            //Check if the original mat exists
-            if (m.rows > 1 && m.cols > 1) {
-
-                Log(log_Detail, "model.cpp", "initializeDictionary", "         sample %05d ('%s'):", (i + 1),samples[i].filename.c_str());
-
-                //Get the keypoints
-                Log(log_Detail, "model.cpp", "initializeDictionary", "            Extracting features (key points)...");
-                detector->detect(m, keypoints);
-
-                //Get the descriptors for each keypoint
-                Log(log_Detail, "model.cpp", "initializeDictionary", "            Computing descriptors from features (key points)...");
-                extractor->compute(m, keypoints, descriptor);
-
-                //Adds the descriptor to the trainer
-                Log(log_Detail, "model.cpp", "initializeDictionary", "            Adding descriptors...");
-                trainer->add(descriptor);
-
-            } else {
-                Log(log_Warning, "model.cpp", "initializeDictionary","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
-            }
-        }
-        Log(log_Debug, "model.cpp", "create", "      Done. %i samples processed in %s seconds.", samples.size(), getDifString(startSubtask).c_str());
-
-        //Faz o clustering, para usar o centro de cada clusters como dicionário
-        Log(log_Debug, "model.cpp", "initializeDictionary", "      Clustering features (choosing centroids as words) out of %i descriptors...", trainer->descriptorsCount());
-        if (trainer->descriptorsCount() > 0){
-            startSubtask = getTick();
-            dictionary = trainer->cluster();
-
-            Log(log_Debug, "model.cpp", "initializeDictionary", "         Done. Features were clustered and descriptors extracted in %s seconds.", getDifString(startSubtask).c_str());
-
-            //Salva o dicionário para facilitar os próximos passos
-            Log(log_Debug, "model.cpp", "initializeDictionary", "      Saving dictionary on file '" + filename + "'...");
-
-            startSubtask = getTick();
-            FileStorage fs(filename, FileStorage::WRITE);
-            fs << "dictionary" << dictionary;
-            fs.release();
-
-            Log(log_Debug, "model.cpp", "initializeDictionary", "         Done.");
-
-            Log(log_Debug, "model.cpp", "initializeDictionary", "      Done. Dictionary was created in %s seconds.",  getDifString(startTask).c_str());
-            return true;
-
-        }else
-            Log(log_Error, "model.cpp", "initializeDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
-    }
+    }else
+        Log(log_Error, "model.cpp", "initializeDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
 
     return false;
 

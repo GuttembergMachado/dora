@@ -7,7 +7,7 @@
 
 #include "../tools/helper.h"
 #include "../tools/binarization.h"
-
+#include "../tools/xycut.h"
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -17,7 +17,7 @@ using namespace cv;
 
 class Sample{
 private:
-    void fixJPEG(string filename);
+    bool isMatValid(Mat m);
 public:
     string label;
     string filename;
@@ -30,25 +30,18 @@ public:
     Mat originalMat;
     Mat grayMat;
     Mat binaryMat;
+    Mat xCutMat;
+    Mat yCutMat;
+    Mat XYCutMat;
 
     bool load(string filename);
     bool create_grayscale();
     bool create_binary(enumBinarization binMethod);
-    bool save(bool original, bool gray, bool binary, bool xCut, bool yCut);
+    bool create_XYCut();
+    bool save();
+    void saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut);
     void dump();
-
-//public:
-
-    //Mat		originalMat;
-    //Mat		binaryMat;
-    //Mat		verticalProjectionMat;
-    //Mat		horizontalProjectionMat;
-    //Mat		projectionMat;
-    //bool loadFile(string fileName);
-    //void	saveBinaryFile(string fileName);
-    //void	saveProjectionFile(string fileName);
-
 };
 
 
-#endif //SAMPLE_H
+#endif

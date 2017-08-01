@@ -1,10 +1,18 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
-#include "binarization.h"
+// This file has some of the binarition algorithms I have been collection from various sources.
+//
 
-#include "opencv2/highgui/highgui.hpp"
-#include "helper.h"
+//TODO: Include licenses and links to the original documents papers
+//TODO: Check the MACROS on the header file (uget, uset, fget, gset)
+//TODO: Replace the integral method (on Bradley's algorithm by opencv's similar function
+//TODO: Check all data types
+//TODO: Add some detailed logs
+//TODO: Tests the Niblack, Sauvola, Wolf, Jolion methods to make sure they still work
+//TODO: Check the expected Mat paramters declarations and implementation
+
+#include "binarization.h"
 
 //  CV_8U  = uchar
 //  CV_8S  = schar
@@ -13,6 +21,8 @@
 //  CV_32S = int
 //  CV_32F = float
 //  CV_64F = double
+
+
 
 double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
 
@@ -70,7 +80,7 @@ double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
     return max_s;
 }
 
-void NiblackSauvolaWolfJolion(Mat inputMat, Mat outputMat, enumBinarization method, int winX, int winY, double k, double dR) {
+void NiblackSauvolaWolfJolion(Mat inputMat, Mat &outputMat, enumBinarization method, int winX, int winY, double k, double dR) {
 
     // Christian Wolf, Jean-Michel Jolion and Francoise Chassaing.
     // Text Localization, Enhancement and Binarization in Multimedia Documents.
@@ -97,8 +107,6 @@ void NiblackSauvolaWolfJolion(Mat inputMat, Mat outputMat, enumBinarization meth
     Mat thsurf(inputMat.rows, inputMat.cols, CV_32F);
 
     // Create the threshold surface, including border processing
-    // ----------------------------------------------------
-
     for (int j = y_firstth; j <= y_lastth; j++) {
 
         // NORMAL, NON-BORDER AREA IN THE MIDDLE OF THE WINDOW:
@@ -185,7 +193,7 @@ void NiblackSauvolaWolfJolion(Mat inputMat, Mat outputMat, enumBinarization meth
         }
 }
 
-void bradley_Binarization(Mat inputMat, Mat outputMat, float T){
+void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
 
     int S = (inputMat.cols / 8);
     float Z = (1.0f - T);
@@ -258,7 +266,7 @@ void bradley_Binarization(Mat inputMat, Mat outputMat, float T){
     resultMat.copyTo(outputMat);
 }
 
-bool binarize(Mat sourceMat, Mat destMat, enumBinarization method){
+bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
 
     int winX = 0;
     int winY = 0;

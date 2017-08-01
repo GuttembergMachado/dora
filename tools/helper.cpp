@@ -1,6 +1,16 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
+// This file not only has helper functinos by also tries to implement OS functions.
+// After porting it to linux, these should be the only module of the project that
+// we will need to change to port to another OS. In the feature we should check
+// if 'compiler variables' are standart to all platforms so we can actually use them.
+//
+
+//TODO: Check out if compiler variables would work on both windows and linux
+//TODO: Improve logging and the log levels
+//
+
 #include <list>
 #include "helper.h"
 
@@ -10,7 +20,7 @@ using namespace std;
 //	1; errors and warnings
 //	2; errors, warnings and debug
 //	3; errors, warnings, debug and details
-int log_level = 3;
+int log_level = 2;
 
 string log_filename = "log.txt";
 
@@ -76,11 +86,10 @@ bool isFile(string path){
 
 	try {
 		if (stat(path.c_str(), &s) == 0)
-			if (s.st_mode & S_IFDIR) {
+			if(S_ISREG(s.st_mode)){
 				Log(log_Detail, "helper.cpp", "isFile", "      Path is an existing file.", path.c_str());
 				return true;
 			}
-
 	}catch(const std::exception& e){
 		Log(log_Error, "helper.cpp", "isFile", "      Failed to check path: %s", e.what() ) ;
 	}
@@ -238,6 +247,7 @@ vector<string> loadImages(string filename){
 	try{
 		int imageCount = 0;
 
+		//TODO: Implement LoadImages function...
 
 		Log(log_Detail, "helper.cpp", "loadImage", "      %i images were loaded.", imageCount );
 
@@ -251,12 +261,12 @@ vector<string> loadImages(string filename){
 int64 getTick(){
 	return getTickCount();
 }
-double getDif(int64 startTick){
+double getDiff(int64 startTick){
 	return (double) (getTick() - startTick) / getTickFrequency();
 }
 string getDifString(int64 startTick){
 
-	double d = (getTick() - startTick) / getTickFrequency();
+	double d = getDiff(startTick);
 	string s(16, '\0');
 	auto w = snprintf(&s[0], s.size(), "%.2f", d);
 	s.resize(w);

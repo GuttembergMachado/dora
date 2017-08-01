@@ -3,35 +3,48 @@
 //
 #include "sample.h"
 
-void Sample::fixJPEG(string filename){
-    Mat m;
-    m = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
-    imwrite(filename, m);
+bool fixJPEGError = true;
+
+bool Sample::isMatValid(Mat m){
+
+    bool bRet = (m.rows > 0 && m.cols > 0 && m.channels() > 0);
+    return bRet;
+
 }
 
 bool Sample::load(string sampleFilename) {
 
-    try{
+    try {
         Log(log_Detail, "sample.cpp", "load", "      Loading file '%s'...", sampleFilename.c_str());
 
         filename = sampleFilename;
 
-        originalMat = Mat();
-
-        //Tenta se livrar do "Premature end of JPEG file"
-        //fixJPEG(filename);
-
-        //Carrega a imagem exatamente como está no arquivo
+        //Loads an unchanged mat from the image file
         originalMat = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
 
-        type = filename.substr(filename.find_last_of(".") + 1);
-        size = fileSize(filename);
-        width = originalMat.cols;
-        height = originalMat.rows;
-        depth = originalMat.dims;
+        //Do we have a mat?
+        if(isMatValid(originalMat)){
 
-        Log(log_Detail, "sample.cpp", "load", "      File loaded.");
-        return true;
+            //Some of the pre-processing I did while I was manually classifing the first trainning set end up
+            //corrupting some of the jpgs (probably due to ignoring the end bytes of the file). Such corrputed
+            //files were causing opencv's imread functino to output an error ("Premature end of JPEG file"),
+            //but would load the image anyway.
+            //By saving the file using opencv's imwrite function we garantee it's properly written to disk
+            if (fixJPEGError && isMatValid(originalMat)){
+                Log(log_Detail, "sample.cpp", "load",  "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
+                imwrite(filename, originalMat);
+            }
+
+            //Stores some sample information to speed up debugging when I need to...
+            type = filename.substr(filename.find_last_of(".") + 1);
+            size = fileSize(filename);
+            width = originalMat.cols;
+            height = originalMat.rows;
+            depth = originalMat.dims;
+
+            Log(log_Detail, "sample.cpp", "load", "      File loaded.");
+            return true;
+        }
 
     }catch(const std::exception& e){
         Log(log_Error, "sample.cpp", "load",  "         Failed to load file: %s", e.what() ) ;
@@ -46,11 +59,15 @@ bool Sample::create_grayscale(){
     try {
         Log(log_Detail, "sample.cpp", "create_grayscale", "      Creating grayscale mat from original mat...");
 
-        cvtColor(originalMat, grayMat, CV_BGR2GRAY);
+        if(isMatValid(originalMat)){
 
-        if (grayMat.rows > 0 && grayMat.cols > 0 && grayMat.channels() == 1) {
-            Log(log_Detail, "sample.cpp", "create_grayscale", "      Grayscale mat created.");
-            return true;
+            //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
+            cvtColor(originalMat, grayMat, CV_BGR2GRAY);
+
+            if(isMatValid(grayMat)){
+                Log(log_Detail, "sample.cpp", "create_grayscale", "      Grayscale mat created.");
+                return true;
+            }
         }
 
     }catch(const std::exception& e){
@@ -64,11 +81,17 @@ bool Sample::create_grayscale(){
 bool Sample::create_binary(enumBinarization binMethod){
 
     try{
-        Log(log_Detail, "sample.cpp", "create_binary", "      Creating binary mat from original mat...");
+        Log(log_Detail, "sample.cpp", "create_binary", "      Creating binary mat from gray mat...");
 
-        if(binarize(grayMat, binaryMat, binMethod)) {
-            Log(log_Detail, "sample.cpp", "create_binary", "      Binary mat created.");
-            return true;
+        if(isMatValid(grayMat)) {
+
+            //converts the gray mat to a black and white one
+            binarize(grayMat, binaryMat, binMethod);
+
+            if(isMatValid(binaryMat)){
+                Log(log_Detail, "sample.cpp", "create_binary", "      Binary mat created.");
+                return true;
+            }
         }
 
     }catch(const std::exception& e){
@@ -79,16 +102,103 @@ bool Sample::create_binary(enumBinarization binMethod){
     return false;
 }
 
-bool Sample::save(bool original, bool gray, bool binary, bool xCut, bool yCut){
+bool Sample::create_XYCut(){
 
     try{
-        Log(log_Debug, "sample.cpp", "save", "      Saving mats as files...");
+        Log(log_Detail, "sample.cpp", "create_XYCut", "      Creating XYCut mats from binary mat...");
+
+        if(isMatValid(binaryMat)) {
+
+            if(getXCut(binaryMat, xCutMat));
+                if(getYCut(binaryMat, yCutMat));
+                    if(getXYCut(binaryMat, XYCutMat));
+
+            if(isMatValid(xCutMat) && isMatValid(yCutMat) && isMatValid(XYCutMat) ){
+                Log(log_Detail, "sample.cpp", "create_XYCut", "      Done. All 3 XYCut mat were created.");
+                return true;
+            }
+        }
+
+    }catch(const std::exception& e){
+        Log(log_Error, "sample.cpp", "create_XYCut",  "         Failed to create XYCut mats: %s", e.what() ) ;
+    }
+
+    Log(log_Warning, "sample.cpp", "create_XYCut", "      Creating XYCut mats failed.");
+    return false;
+}
+
+bool Sample::save(){
+
+    try{
+        Log(log_Debug, "sample.cpp", "save", "      Saving original mat...");
+
+        if(isMatValid(originalMat)) {
+
+            //saves mat to file
+            imwrite(filename, originalMat);
+
+            Log(log_Debug, "sample.cpp", "save", "         Done saving original mat...");
+            return true;
+
+        }
+
+    }catch(const std::exception& e){
+        Log(log_Error, "sample.cpp", "save",  "         Failed to save original mat: %s", e.what() ) ;
+    }
+
+    Log(log_Warning, "sample.cpp", "create_binary", "      Saving original mat failed.");
+    return false;
+}
+
+void Sample::saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut){
+
+    try{
+
+        string tempFilename;
+
+        if(gray && isMatValid(grayMat)){
+            tempFilename = folder + "/temp/gray_" + getFileName(filename);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving gray mat as '%s'...", tempFilename.c_str());
+            imwrite(tempFilename, grayMat);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving gray mat.");
+        }
+
+        if(binary && isMatValid(binaryMat)){
+            imwrite(filename, binaryMat);
+            tempFilename = folder + "/temp/binary_" + getFileName(filename);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving binary mat as '%s'...", tempFilename.c_str());
+            imwrite(tempFilename, binaryMat);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving binary mat.");
+        }
+
+        if(xCut && isMatValid(xCutMat)){
+            imwrite(filename, xCutMat);
+            tempFilename = folder + "/temp/xcut" + getFileName(filename);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving xCut mat as '%s'...", tempFilename.c_str());
+            imwrite(tempFilename, xCutMat);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving xCut mat.");
+        }
+
+        if(yCut && isMatValid(yCutMat)){
+            imwrite(filename, yCutMat);
+            tempFilename = folder + "/temp/ycut" + getFileName(filename);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving yCut mat as '%s'...", tempFilename.c_str());
+            imwrite(tempFilename, yCutMat);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving gray mat.");
+        }
+
+        if(XYCut && isMatValid(XYCutMat)){
+            imwrite(filename, XYCutMat);
+            tempFilename = folder + "/temp/xycut" + getFileName(filename);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving XYCut mat as '%s'...", tempFilename.c_str());
+            imwrite(tempFilename, XYCutMat);
+            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving XYCut mat.");
+        }
 
     }catch(const std::exception& e){
         Log(log_Error, "sample.cpp", "save",  "         Failed to save files: %s", e.what() ) ;
     }
 
-    return false;
 }
 
 void Sample::dump(){
@@ -101,91 +211,16 @@ void Sample::dump(){
     Log(log_Detail, "sample.cpp", "dump", "            Width: %i", width);
     Log(log_Detail, "sample.cpp", "dump", "            Height: %i", height);
     Log(log_Detail, "sample.cpp", "dump", "            Depth: %i", depth);
+    if(isMatValid(grayMat))
+        Log(log_Detail, "sample.cpp", "dump", "            grayMat: created (%i cols, %i rows, %i channels).", grayMat.rows, grayMat.cols, grayMat.channels());
+    if(isMatValid(binaryMat))
+        Log(log_Detail, "sample.cpp", "dump", "            binaryMat: created (%i cols, %i rows, %i channels).", binaryMat.rows, binaryMat.cols, binaryMat.channels());
+    if(isMatValid(xCutMat))
+        Log(log_Detail, "sample.cpp", "dump", "            xCutMat: created (%i cols, %i rows, %i channels).", xCutMat.rows, xCutMat.cols, xCutMat.channels());
+    if(isMatValid(yCutMat))
+        Log(log_Detail, "sample.cpp", "dump", "            yCutMat: created (%i cols, %i rows, %i channels).", yCutMat.rows, yCutMat.cols, yCutMat.channels());
+    if(isMatValid(XYCutMat))
+        Log(log_Detail, "sample.cpp", "dump", "            XYCut: created (%i cols, %i rows, %i channels).", XYCutMat.rows, XYCutMat.cols, XYCutMat.channels());
 
 }
-
-/*
-void Document::loadFile(string f){
-
-	//Anota a hora do inicio do processo
-	DWORD s = GetTickCount();
-
-	Log(log_Debug, "sample.cpp", "loadFile", "            Loading document '" + f.substr(f.find_last_of("\\") + 1)  + "'...");
-
-	// Anota o nome do documento 
-	filename = f;
-
-	//Anota a extensão do arquivo
-	type = filename.substr(filename.find_last_of("."));
-	transform(type.begin(), type.end(), type.begin(), ::tolower);
-
-	//Anota o tamanho do arquivo
-	FILE * fp;
-	fopen_s(&fp, filename.c_str(), "rb");
-	if (fp == NULL){
-		Log(log_Error, "sample.cpp", "loadFile", "               File not found");
-		return;
-	}
-	else{
-		fseek(fp, 0, SEEK_END);
-		filesize = ftell(fp);
-		fclose(fp);
-	}
-
-	//Carrega o arquivo
-	if (type == ".jpg" || type == ".png"){
-
-		originalMat = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
-		binaryMat = imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
-
-		//Aloca o espaço para as outras Mats
-		verticalProjectionMat	= Mat();
-		horizontalProjectionMat = Mat();
-		projectionMat			= Mat();
-	}
-	else{
-		//Por enquanto só existe tratamento para imagens
-		Log(log_Error, "sample.cpp", "loadFile", "               Document type (" + type + ") not supported! ");
-		return;
-	}
-
-	Log(log_Debug, "sample.cpp", "loadFile", "               It took " + getFormatedTime(GetTickCount() - s) + " to load the " + to_string(filesize) + " bytes file.");
-
-}
-
-void Document::saveBinaryFile(string filename){
-
-	//Anota a hora do inicio do processo
-	DWORD s = GetTickCount();
-
-	try {
-		Log(log_Debug, "sample.cpp", "saveBinaryFile", "            Saving binary Mat as '" + filename + "...");
-		
-		imwrite(filename, binaryMat);
-
-		Log(log_Debug, "sample.cpp", "saveBinaryFile", "               It took " + getFormatedTime(GetTickCount() - s) +" to save binary Mat.");
-	}
-	catch(Exception ex) {
-		Log(log_Error, "sample.cpp", "saveBinaryFile", "               Unable to save binary Mat.");
-	}
-}
-
-void Document::saveProjectionFile(string filename){
-
-	//Anota a hora do inicio do processo
-	DWORD s = GetTickCount();
-
-	try {
-		Log(log_Debug, "sample.cpp", "saveProjectionFile", "            Saving projection Mat as '" + filename + "...");
-
-		imwrite(filename, projectionMat);
-
-		Log(log_Debug, "sample.cpp", "saveBinaryFile", "               It took " + getFormatedTime(GetTickCount() - s) + " to save projection Mat.");
-	}
-	catch (Exception ex) {
-		Log(log_Error, "sample.cpp", "saveProjectionFile", "               Unable to save projection Mat.");
-	}
-}
-
- */
 

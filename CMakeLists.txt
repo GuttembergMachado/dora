@@ -18,7 +18,9 @@ set(SOURCE_FILES
         tools/helper.cpp
         tools/helper.h
         tools/binarization.cpp
-        tools/binarization.h)
+        tools/binarization.h
+        tools/xycut.cpp
+        tools/xycut.h)
 
 add_executable(dora ${SOURCE_FILES})
 

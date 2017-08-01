@@ -5,6 +5,8 @@
 #define BINARIZATION_H
 
 #include "opencv2/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "helper.h"
 
 using namespace cv;
 using namespace std;
@@ -26,6 +28,6 @@ enum enumBinarization
 #define fget(x,y)	 at<float>(y,x)
 #define fset(x,y,v)  at<float>(y,x)=v;
 
-bool binarize(Mat source, Mat dest, enumBinarization method);
+bool binarize(Mat &source, Mat &dest, enumBinarization method);
 
 #endif

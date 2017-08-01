@@ -43,11 +43,11 @@ string getFolderName(string path);
 string replace(string str, string from, string to);
 
 int64 getTick();
-double getDif(int64 startTick);
+double getDiff(int64 startTick);
 string getDifString(int64 startTick);
 
 string getCurrentTimeStamp();
-string getElapsedTime(unsigned fromTime);
+
 
 
 #endif

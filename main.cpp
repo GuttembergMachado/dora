@@ -20,23 +20,24 @@ int main(int argc, char **argv){
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
     Log(log_Error, "main.cpp", "main", "Displaying %s.", getLogMode().c_str());
 
-    //Verifica se foram passados os parâmetros
+    //Checks if the number of parametes is right
     if (argc == 4){
 
         string mode = argv[1];
         string inputPath = argv[2];
         string model = argv[3];
 
-        //Anota os parâmetros passados
+        //Set the basic parameters of the model
         mod.classificationModel = model_BAG_OF_FEATURES;
         mod.featureType  = feature_SIFT;
         mod.matcherModel = matcher_FLANN;
-        mod.binarizationMethod = binarization_TRESHOLD ;//binarization_CLAHE;// binarization_WOLFJOLION; //binarization_BRADLEY;
+        mod.binarizationMethod = binarization_BRADLEY;
         mod.name = getFileName(model);
         mod.filename = model;
         mod.folder = getFolderName(model);
+        mod.saveIntermediateFiles = true;
 
-        //Verifica se é para usar no modo MODELER
+        //Is it the modeler  mode?
         if (mode == "-m" || mode == "-M"){
 
             Log(log_Debug, "main.cpp", "main", "Entering MODELLER mode:");
@@ -49,10 +50,10 @@ int main(int argc, char **argv){
             Log(log_Debug, "main.cpp", "main", "   Matching: '%s'", mod.getMatcherName().c_str());
             Log(log_Debug, "main.cpp", "main", "   Binarization: '%s'", mod.getBinarizationName().c_str());
 
-            //Cria o modelo
+            //Creates the model based on the input sample folder, using the folder name as labels
             if(mod.create(inputPath)){
 
-                //Salva o modelo em um arquivo
+                //Saves the model
                 if(mod.save())
                     Log(log_Debug, "main.cpp", "main", "      Model was saved");
                 else
@@ -61,6 +62,7 @@ int main(int argc, char **argv){
             }else
                 Log(log_Debug, "main.cpp", "main", "Failed to create model!");
 
+        //Is it the testing mode?
         }else if (mode == "-c" || mode == "-C") {
 
             Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
@@ -72,33 +74,35 @@ int main(int argc, char **argv){
             vector<string> files;
             vector<string> images;
 
-            //Verifica se é uma pasta
+            //Is the input a folder?
             if (isFolder(inputPath))
                 files = listFiles(inputPath);
             else
                 files = loadImages(inputPath);
 
-            //Carrega as imagens do(s) arquivo(s)
+            //load all images from files (in case of multi-image file formats, such as pdf, tiff, etc...)
             for (int i = 0; i < files.size(); i++)
                 images = loadImages(files[i]);
 
             if (images.size() >= 1){
 
-                //Carrega o modelo de reconhecimento
+                //loads the model
                 if(mod.load()){
 
                     for (int i = 0; i < images.size(); i++){
 
-                        //Carrega o documento
+                        //loads the image
                         //doc.loadFile(images[i]);
 
-                        //Faz o post processamento
+                        //classify the image
                         //post.postProcessDoc(doc);
                     }
                 }
             }else{
                 Log(log_Error, "main.cpp", "main", "   No supported images were found.");
             }
+
+        //Is it the helper mode
         }else if (mode == "-h" || mode == "-H"){
             Log(log_Debug, "main.cpp", "main", "-------------------------------------------------------------------------------");
             Log(log_Debug, "main.cpp", "main", "Dora is a document classifier.");
@@ -129,11 +133,10 @@ int main(int argc, char **argv){
 
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
 
-    //system("read");
     Log(log_Error, "main.cpp", "main", "Press any key to exit");
     getchar();
 
-    //Encerra o programa
+    //exit
     return 0;
 
 }
