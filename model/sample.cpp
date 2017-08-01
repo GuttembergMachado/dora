@@ -3,11 +3,11 @@
 //
 #include "sample.h"
 
-bool fixJPEGError = true;
+bool fixJPEGError = false;
 
 bool Sample::isMatValid(Mat m){
 
-    bool bRet = (m.rows > 0 && m.cols > 0 && m.channels() > 0);
+    bool bRet = (m.rows > 0 && m.cols > 0 && m.channels() > 0 && !m.empty());
     return bRet;
 
 }
@@ -32,7 +32,7 @@ bool Sample::load(string sampleFilename) {
             //By saving the file using opencv's imwrite function we garantee it's properly written to disk
             if (fixJPEGError && isMatValid(originalMat)){
                 Log(log_Detail, "sample.cpp", "load",  "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
-                imwrite(filename, originalMat);
+                save();
             }
 
             //Stores some sample information to speed up debugging when I need to...
@@ -135,7 +135,7 @@ bool Sample::save(){
         if(isMatValid(originalMat)) {
 
             //saves mat to file
-            imwrite(filename, originalMat);
+            //imwrite(filename, originalMat);
 
             Log(log_Debug, "sample.cpp", "save", "         Done saving original mat...");
             return true;
@@ -164,7 +164,6 @@ void Sample::saveIntermediate(string folder, bool gray, bool binary, bool xCut, 
         }
 
         if(binary && isMatValid(binaryMat)){
-            imwrite(filename, binaryMat);
             tempFilename = folder + "/temp/binary_" + getFileName(filename);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving binary mat as '%s'...", tempFilename.c_str());
             imwrite(tempFilename, binaryMat);
@@ -172,24 +171,21 @@ void Sample::saveIntermediate(string folder, bool gray, bool binary, bool xCut, 
         }
 
         if(xCut && isMatValid(xCutMat)){
-            imwrite(filename, xCutMat);
-            tempFilename = folder + "/temp/xcut" + getFileName(filename);
+            tempFilename = folder + "/temp/xcut_" + getFileName(filename);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving xCut mat as '%s'...", tempFilename.c_str());
             imwrite(tempFilename, xCutMat);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving xCut mat.");
         }
 
         if(yCut && isMatValid(yCutMat)){
-            imwrite(filename, yCutMat);
-            tempFilename = folder + "/temp/ycut" + getFileName(filename);
+            tempFilename = folder + "/temp/ycut_" + getFileName(filename);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving yCut mat as '%s'...", tempFilename.c_str());
             imwrite(tempFilename, yCutMat);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving gray mat.");
         }
 
         if(XYCut && isMatValid(XYCutMat)){
-            imwrite(filename, XYCutMat);
-            tempFilename = folder + "/temp/xycut" + getFileName(filename);
+            tempFilename = folder + "/temp/xycut_" + getFileName(filename);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving XYCut mat as '%s'...", tempFilename.c_str());
             imwrite(tempFilename, XYCutMat);
             Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving XYCut mat.");
