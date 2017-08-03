@@ -20,7 +20,7 @@ using namespace std;
 //	1; errors and warnings
 //	2; errors, warnings and debug
 //	3; errors, warnings, debug and details
-int log_level = 3;
+int log_level = 2;
 
 string log_filename = "log.txt";
 
@@ -255,6 +255,12 @@ vector<string> loadImages(string filename){
 		Log(log_Error, "helper.cpp", "loadImage","      Failed to load image(s): %s", e.what() ) ;
 	}
 
+}
+
+bool isMatValid(Mat m){
+
+    bool bRet = (m.rows > 0 && m.cols > 0 && m.channels() > 0 && !m.empty());
+    return bRet;
 }
 
 //---------------------------------------------------------------------------------------------------------------------------

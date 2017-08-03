@@ -11,7 +11,6 @@ Dora is a console application and although there's no setup required, it does re
    
 Dora can be used in two distinct modes: **Modeler** and **Classifier**. 
 
-
 ## Modeler mode
  This is the part that actually learns from image samples previously classified.
 
@@ -22,6 +21,8 @@ Dora can be used in two distinct modes: **Modeler** and **Classifier**.
  This is the part that uses whatever was learned to classify a real image.
 
  The **Classifier mode** requires an input set, that can be a single image file, a multi-image file (such as tiff, pdfs, etc) or a folder with those files, and after processing it returns a LABEL for each image.   
+    
+    
     
 ```
 Usage:
@@ -89,4 +90,4 @@ Most of the algorithms used are actually provided by opencv, except by **Matrix 
 
 
 ### Sample images
-- Deck of cards (courtesy of) https://code.google.com/archive/p/vector-playing-cards/
+- Decks of cards (courtesy of http://freeware.esoterica.free.fr/html/freecards.html)

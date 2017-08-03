@@ -5,13 +5,6 @@
 
 bool fixJPEGError = false;
 
-bool Sample::isMatValid(Mat m){
-
-    bool bRet = (m.rows > 0 && m.cols > 0 && m.channels() > 0 && !m.empty());
-    return bRet;
-
-}
-
 bool Sample::load(string sampleFilename) {
 
     try {

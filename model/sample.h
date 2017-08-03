@@ -16,8 +16,6 @@ using namespace std;
 using namespace cv;
 
 class Sample{
-private:
-    bool isMatValid(Mat m);
 public:
     string label;
     string filename;

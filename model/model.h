@@ -46,15 +46,17 @@ enum enumMatchers
 
 class Model {
     vector<Sample>	            samples;
-	bool                        initializeModules();
-	bool                        createDictionary();
-	bool                        loadDictionary();
+	bool             			createDictionary();
+	bool 						createHistograms();
+	bool             			loadDictionary();
     Ptr<FeatureDetector>        detector;
     Ptr<DescriptorExtractor>    extractor;
     Ptr<BOWTrainer>	            trainer;
     Ptr<DescriptorMatcher>      matcher;
 	Mat							dictionary;
     int					        dictionarySize;
+	int 						minDimension = 50;
+	int 						maxDimension = 720;
 public:
 	enumModels       classificationModel;
 	enumFeatures     featureType;
@@ -71,5 +73,7 @@ public:
 	bool             create(string sampleFolder);
 	bool             load();
 	bool             save();
+	bool             initialize();
+
 };
 #endif

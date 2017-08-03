@@ -48,6 +48,6 @@ string getDifString(int64 startTick);
 
 string getCurrentTimeStamp();
 
-
+bool isMatValid(Mat m);
 
 #endif

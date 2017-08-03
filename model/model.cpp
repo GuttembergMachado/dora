@@ -31,30 +31,43 @@ bool Model::create(string sampleFolder){
                     //Loads the sample
                     if (s.load(files[i])){
 
-                        //Creates grayscale mat of the sample
-                        if(!s.create_grayscale())
-                            break;
+                        //Check if sample is too small
+                        if (s.originalMat.cols > minDimension && s.originalMat.rows > minDimension) {
 
-                        //Creates monochromatic mat of the grayscale sample
-                        if(!s.create_binary(binarizationMethod))
-                            break;
+                            //Check if sample needs resizing
+                            if(s.originalMat.cols < maxDimension && s.originalMat.rows < maxDimension) {
 
-                        //Creates XYCut images
-                        if(!s.create_XYCut())
-                            break;
+                                Log(log_Debug, "model.cpp", "create", "      Loaded sample %i...", samples.size());
 
-                        if(saveIntermediateFiles)
-                            s.saveIntermediate(folder, true, true, true,true,true);
+                                //Creates grayscale mat of the sample
+                                if(!s.create_grayscale())
+                                    break;
 
-                        //Uses the folder as the label identifing the sample
-                        s.label = replace(getFolderName(s.filename), sampleFolder, "");
+                                //Creates monochromatic mat of the grayscale sample
+                                if(!s.create_binary(binarizationMethod))
+                                    break;
 
-                        samples.push_back(s);
-                        s.dump();
+                                //Creates XYCut images
+                                if(!s.create_XYCut())
+                                    break;
+
+                                if(saveIntermediateFiles)
+                                    s.saveIntermediate(folder, false, true, false, false, false);
+
+                                //Uses the folder as the label
+                                s.label = replace(getFolderName(s.filename), sampleFolder, "");
+                                samples.push_back(s);
+                                s.dump();
+
+                            }else{
+                                Log(log_Error, "model.cpp", "create", "      Sample %i is too large! Ignoring it...");
+                            }
+                        }else{
+                            Log(log_Error, "model.cpp", "create", "      Sample is too small! Ignoring it...");
+                        }
                     }
-
                 }
-                Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples in %s seconds.", samples.size() , getDifString(startSubtask).c_str());
+                Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples out of %i files in %s seconds.", samples.size(), files.size(), getDifString(startSubtask).c_str());
 
                 //Did we manage to load any file at all?
                 if(samples.size() > 0) {
@@ -62,15 +75,146 @@ bool Model::create(string sampleFolder){
                     Log(log_Debug, "model.cpp", "create", "   Initializing modules...");
                     startSubtask = getTick();
 
-                    //Initialize main modules (trainer, feature extractor, binarization, etc...)
-                    if (initializeModules()) {
-                        Log(log_Debug, "model.cpp", "create", "      Done. Modules initialized in %s seconds.", getDifString(startSubtask).c_str());
+                    //Creates the dictionary
+                    if(createDictionary()){
 
-                        //Do we need to create a dictionary?
-                        if(!isFile(filename))
-                            createDictionary();
+                        //Associa o dicionrio  ao matcher
+                        startSubtask = getTick();
+                        bow.setVocabulary(dictionary);
+                        Log(log_Debug, "model.cpp", "create", "      Done. Vocabulary was set in %s seconds.", getDifString(startSubtask).c_str());
+
+                        //Creates the histogramas
+                        if(createHistograms(){
+
+                        }
+
+
+                        //-------------------------------------------------------------------
+                        //Salva o arquivo dos histogramas (com os dados para serem treinados)
+                        s = GetTickCount();
+                        Log(log_Debug, "model.cpp", "saveModel", "   Saving trainingData on file '" + trainingSetFile + "'...");
+                        FileStorage fs(trainingSetFile, FileStorage::WRITE);
+                        fs << "trainingData" << trainingData;
+                        fs.release();
+                        Log(log_Debug, "model.cpp", "saveModel", "      It took " + getFormatedTime(GetTickCount() - s) + " to save trainingData on File.");
+
+
+                        /*
+
+                        //-------------------------------------------------------------------
+                        //Verifica se precisa gerar os histogramas
+                        if (trainingData.dims == 0){
+
+                            //-------------------------------------------------------------------
+                            //Define o dicionário (indicando quais palavras serão consideradas)
+                            s = GetTickCount();
+                            Log(log_Debug, "Sample.cpp", "createModel", "      Setting vocabulary...");
+                            BOWImgDescriptorExtractor bow(extractor, matcher);
+                            bow.setVocabulary(dictionary);
+                            Log(log_Debug, "Sample.cpp", "createModel", "         It took " + getFormatedTime((GetTickCount() - s)) + " to set vocabulary.");
+
+                            //-------------------------------------------------------------------
+                            //Gera um histograma (Palavras do Dicionário X Ocorrencia) para cada imagem
+                            s = GetTickCount();
+                            Log(log_Debug, "Sample.cpp", "createModel", "      Creating histograms...");
+                            Document		doc;
+                            PreProcessor	pre;
+                            for (int i = 0; i < samples.size(); i++)
+                            {
+                                Log(log_Debug, "model.cpp", "createModel", "         Sample " + to_string(i + 1) + ": " + samples[i].label + ": " + samples[i].filename.substr(samples[i].filename.find_last_of("\\") + 1));
+
+                                //Carrega o documento
+                                doc.loadFile(samples[i].filename);
+
+                                //Faz o pre-processamento da imagem
+                                pre.preProcessDoc(doc, alg_BRADLEY, false, false, false);
+
+                                s = GetTickCount();
+                                Log(log_Debug, "model.cpp", "createModel", "            Extracting histogram for sample " + to_string(i + 1) + "...");
+
+                                //Get the keypoints
+                                detector->detect(doc.binaryMat, keypoints);
+
+                                //Get the descriptors for each keypoint (that is already using the dictionary)
+                                bow.compute(doc.binaryMat, keypoints, descriptor);
+
+                                //Adds the descriptor to the trainning array
+                                trainingData.push_back(descriptor);
+
+                                Log(log_Debug, "model.cpp", "createModel", "               It took " + getFormatedTime(GetTickCount() - s) + " to extract histogram.");
+
+                                //-------------------------------------------------------------------
+                                //Salva o arquivo dos histogramas (com os dados para serem treinados)
+                                s = GetTickCount();
+                                Log(log_Debug, "model.cpp", "saveModel", "   Saving trainingData on file '" + trainingSetFile + "'...");
+                                FileStorage fs(trainingSetFile, FileStorage::WRITE);
+                                fs << "trainingData" << trainingData;
+                                fs.release();
+                                Log(log_Debug, "model.cpp", "saveModel", "      It took " + getFormatedTime(GetTickCount() - s) + " to save trainingData on File.");
+
+
+                            }
+                            Log(log_Debug, "Sample.cpp", "createModel", "      It took " + getFormatedTime((GetTickCount() - s)) + " to create histograms.");
+
+                        }
                         else
-                            loadDictionary();
+                            Log(log_Debug, "model.cpp", "saveModel", "   Creating histograms was not necessary.");
+
+                        //-------------------------------------------------------------------
+                        //Verifica se precisa gerar os labels
+                        if (labels.size() == 0 || trainingLabel.dims == 0){
+
+                            //-------------------------------------------------------------------
+                            //Gera o Mat com os Labels
+                            s = GetTickCount();
+                            Log(log_Debug, "model.cpp", "saveModel", "   Creating the label Mat...");
+                            for (int i = 0; i < samples.size(); i++)
+                            {
+                                //Verifica se já adicionamos esse Label
+                                if (find(labels.begin(), labels.end(), samples[i].label) == labels.end())
+                                    labels.push_back(samples[i].label);
+                            }
+
+                            for (int i = 0; i < samples.size(); i++)
+                            {
+                                int label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
+                                trainingLabel.push_back((float)label_index);
+                            }
+                            Log(log_Debug, "model.cpp", "saveModel", "      It took " + getFormatedTime(GetTickCount() - s) + " to create the labels Mat.");
+
+                            //-------------------------------------------------------------------
+                            //Salva o arquivo dos histogramas (com os dados para serem treinados)
+                            s = GetTickCount();
+                            Log(log_Debug, "model.cpp", "saveModel", "   Saving labels on file '" + trainingSetFile + "'...");
+                            FileStorage fs(trainingSetFile, FileStorage::WRITE);
+                            fs << "labels" << labels;
+                            fs << "trainingLabel" << trainingLabel;
+                            fs.release();
+                            Log(log_Debug, "model.cpp", "saveModel", "      It took " + getFormatedTime(GetTickCount() - s) + " to save labels on file.");
+
+                        }else
+                            Log(log_Debug, "model.cpp", "saveModel", "   Creating labels was not necessary.");
+
+                        //-------------------------------------------------------------------
+                        //Treina o Support Vector Macinhe
+                        s = GetTickCount();
+                        Log(log_Debug, "Sample.cpp", "saveModel", "   Training SVM classifier...");
+
+                        CvSVMParams params;
+                        params.kernel_type = CvSVM::RBF;
+                        params.svm_type = CvSVM::C_SVC;
+                        params.gamma = 0.50625000000000009;
+                        params.C = 312.50000000000000;
+                        params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 0.000001);
+
+                        bool res = svm.train(trainingData, trainingLabel, cv::Mat(), cv::Mat(), params);
+
+                        Log(log_Debug, "Sample.cpp", "saveModel", "      It took " + getFormatedTime((GetTickCount() - s)) + " to train SVM classifier.");
+
+                        Log(log_Debug, "model.cpp", "createModel", "   Creating Model took " + getFormatedTime(GetTickCount() - s) + ".");
+                        */
+
+
 
                         //TODO
                         //TODO
@@ -83,8 +227,8 @@ bool Model::create(string sampleFolder){
                         Log(log_Error, "model.cpp", "create", "   Done creating model in %s seconds.", getDifString(startTask).c_str());
                         return true;
 
-                    } else
-                        Log(log_Error, "model.cpp", "create", "   Failed to initialize modules!");
+                    }
+
                 } else
                     Log(log_Debug, "model.cpp", "create", "   No samples found.");
             }else
@@ -117,6 +261,18 @@ bool Model::load(){
                 //fs["labels"] >> labels;
                 fs.release();
 
+
+                //FileStorage fs(trainingSetFile, FileStorage::READ);
+                //f//s["dictionary"] >> dictionary;
+                //fs["trainingData"] >> trainingData;
+                //fs["labels"] >> labels;
+                //fs["trainingLabel"] >> trainingLabel;
+                //fs.release();
+
+
+
+
+
                 Log(log_Debug, "model.cpp", "load", "      TODO: (NOT IMPLEMENTED): Model was loaded.");
                 return true;
 
@@ -137,10 +293,27 @@ bool Model::load(){
 
 bool Model::save(){
 
+    int64 startTask = getTick();
+    int64 startSubtask;
+
 	Log(log_Debug, "model.cpp", "save", "   Saving model file...");
 
 	try{
-		//TODO:
+
+        Log(log_Debug, "model.cpp", "save", "      Saving dictionary on file '" + filename + "'...");
+        startSubtask = getTick();
+        //Saves
+        FileStorage fs(filename, FileStorage::WRITE);
+        fs << "dictionary" << dictionary;
+        fs.release();
+        Log(log_Debug, "model.cpp", "save", "         Done saving dictionary file in %s seconds.",  getDifString(startSubtask).c_str());
+
+
+        //TODO
+        //TODO
+        //TODO
+
+
 
 		Log(log_Debug, "model.cpp", "save", "      TODO: (NOT IMPLEMENTED): Model was saved.");
 		//return true;
@@ -152,7 +325,7 @@ bool Model::save(){
 	return false;
 }
 
-bool Model::initializeModules(){
+bool Model::initialize(){
 
     try{
 
@@ -219,6 +392,10 @@ bool Model::initializeModules(){
                 return false;
         }
 
+        //TODO: Analisar isso aqui
+        //Associa um matcher ao extractor
+        BOWImgDescriptorExtractor bow(extractor, matcher);
+
         return true;
 
     }catch(const std::exception& e){
@@ -272,7 +449,7 @@ bool Model::createDictionary() {
             extractor->compute(m, keypoints, descriptor);
 
             //Adds the descriptor to the trainer
-            Log(log_Detail, "model.cpp", "createDictionary", "            Adding %i descriptors...", descriptor.size());
+            Log(log_Detail, "model.cpp", "createDictionary", "            Adding descriptors...");
             if (!descriptor.empty())
                 trainer->add(descriptor);
 
@@ -287,24 +464,88 @@ bool Model::createDictionary() {
 
         Log(log_Debug, "model.cpp", "createDictionary", "      Clustering features (choosing centroids as words) out of all %i descriptors found...", trainer->descriptorsCount());
         startSubtask = getTick();
+
         //Cluster (use the centroid of each cluster as the words of the dictionary)
         dictionary = trainer->cluster();
-        Log(log_Debug, "model.cpp", "createDictionary", "         Done loading features in %s seconds.", getDifString(startSubtask).c_str());
 
-        Log(log_Debug, "model.cpp", "createDictionary", "      Saving dictionary on file '" + filename + "'...");
-        startSubtask = getTick();
-        //Saves
-        FileStorage fs(filename, FileStorage::WRITE);
-        fs << "dictionary" << dictionary;
-        fs.release();
-        Log(log_Debug, "model.cpp", "createDictionary", "         Done saving dictionary file in %s seconds.",  getDifString(startSubtask).c_str());
+        if(dictionary.dims > 0){
+            Log(log_Debug, "model.cpp", "createDictionary", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
+            return true;
+        }
 
-
-        Log(log_Debug, "model.cpp", "createDictionary", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
-        return true;
+        Log(log_Debug, "model.cpp", "createDictionary", "         ERROR: Failed to create dictionary.");
 
     }else
         Log(log_Error, "model.cpp", "createDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
+
+    return false;
+
+}
+
+bool Model::createHistograms() {
+
+
+    int64 startTask = getTick();
+    int64 startSubtask;
+
+    Log(log_Debug, "model.cpp", "createHistograms", "      Creating a new histograms based on the %i samples found...", samples.size());
+    startSubtask = getTick();
+
+    vector<KeyPoint> keypoints;
+    Mat descriptor;
+
+    for (int i = 0; i < samples.size(); i++) {
+
+        Mat m = samples[i].binaryMat;
+
+        //Check if the original mat exists
+        if (isMatValid(m)) {
+
+            Log(log_Detail, "model.cpp", "createHistograms", "         sample %05d ('%s'):", (i + 1),samples[i].filename.c_str());
+
+            //Get the keypoints
+            Log(log_Detail, "model.cpp", "createHistograms", "            Extracting features (key points)...");
+            detector->detect(m, keypoints);
+
+            Log(log_Detail, "model.cpp", "createHistograms", "            Computing descriptors from features (key points)...");
+            bow.compute(m, keypoints, descriptor);
+
+            //Adds the descriptor to the trainning array
+            Log(log_Detail, "model.cpp", "createHistograms", "            Adding descriptors...");
+            trainingData.push_back(descriptor);
+
+            if(trainingData.size>0){
+                Log(log_Debug, "model.cpp", "createDictionary", "         Done. Training data was created in %s seconds.", getDifString(startTask).c_str());
+                return true;
+            }
+
+            Log(log_Warning, "model.cpp", "createHistograms","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
+
+
+        } else {
+            Log(log_Warning, "model.cpp", "createHistograms","         sample %05d ('%s') ignored because original mat was not found...", (i + 1), samples[i].filename.c_str());
+        }
+    }
+    Log(log_Debug, "model.cpp", "createHistograms", "      Done loading all %i samples in %s seconds.", samples.size(), getDifString(startSubtask).c_str());
+
+    //Did processing the samples find anything usefull?
+    if (trainer->descriptorsCount() > 0){
+
+        Log(log_Debug, "model.cpp", "createHistograms", "      Clustering features (choosing centroids as words) out of all %i descriptors found...", trainer->descriptorsCount());
+        startSubtask = getTick();
+
+        //Cluster (use the centroid of each cluster as the words of the dictionary)
+        dictionary = trainer->cluster();
+
+        if(dictionary.dims > 0){
+            Log(log_Debug, "model.cpp", "createHistograms", "         Done. Dictionary was created and initialized  in %s seconds.", getDifString(startTask).c_str());
+            return true;
+        }
+
+        Log(log_Debug, "model.cpp", "createHistograms", "         ERROR: Failed to create dictionary.");
+
+    }else
+        Log(log_Error, "model.cpp", "createHistograms", "         ERROR: Failed to cluster because no descriptors were found!");
 
     return false;
 
@@ -355,109 +596,3 @@ string Model::getBinarizationName(){
         default:				      return "UNKNOWN";
     }
 }
-
-/*
-
-             //-------------------------------------------------------------------
-            //Verifica se precisa gerar os histogramas
-            if (trainingData.dims == 0){
-
-                //-------------------------------------------------------------------
-                //Define o dicionário (indicando quais palavras serão consideradas)
-                Log(log_Debug, "Sample.cpp", "createModel", "      Setting vocabulary...");
-                //BOWImgDescriptorExtractor bow(extractor, matcher);
-                //bow.setVocabulary(dictionary);
-                Log(log_Debug, "Sample.cpp", "createModel", "         Done.");
-
-                //-------------------------------------------------------------------
-                //Gera um histograma (Palavras do Dicionário X Ocorrencia) para cada imagem
-                Log(log_Debug, "Sample.cpp", "createModel", "      Creating histograms...");
-                //Document		doc;
-                //PreProcessor	pre;
-                for (int i = 0; i < samples.size(); i++)
-                {
-                    Log(log_Debug, "model.cpp", "create", "         Sample " + to_string(i + 1) + ": " + samples[i].label + ": " + samples[i].filename.substr(samples[i].filename.find_last_of("\\") + 1));
-
-                    //Carrega o documento
-                    //doc.loadFile(samples[i].filename);
-                    //
-                    //Faz o pre-processamento da imagem
-                    //pre.preProcessDoc(doc, alg_BRADLEY, false, false, false);
-                    //
-                    Log(log_Debug, "model.cpp", "create", "            Extracting histogram for sample " + to_string(i + 1) + "...");
-                    //
-                    //Get the keypoints
-                    //detector->detect(doc.binaryMat, keypoints);
-                    //
-                    //Get the descriptors for each keypoint (that is already using the dictionary)
-                    //bow.compute(doc.binaryMat, keypoints, descriptor);
-                    //
-                    //Adds the descriptor to the trainning array
-                    //trainingData.push_back(descriptor);
-                    //
-                    Log(log_Debug, "model.cpp", "create", "               Done.");
-
-                    //-------------------------------------------------------------------
-                    //Salva o arquivo dos histogramas (com os dados para serem treinados)
-                    Log(log_Debug, "model.cpp", "saveModel", "   Saving trainingData on file '" + trainingSetFile + "'...");
-                    //FileStorage fs(trainingSetFile, FileStorage::WRITE);
-                    //fs << "trainingData" << trainingData;
-                    //fs.release();
-                    Log(log_Debug, "model.cpp", "saveModel", "      Done.");
-
-
-                }
-                Log(log_Debug, "model.cpp", "create", "      Done.");
-
-            }
-            else
-                Log(log_Debug, "model.cpp", "saveModel", "   Creating histograms was not necessary.");
-
-            //-------------------------------------------------------------------
-            //Verifica se precisa gerar os labels
-            if (labels.size() == 0 || trainingLabel.dims == 0){
-
-                //-------------------------------------------------------------------
-                //Gera o Mat com os Labels
-                Log(log_Debug, "model.cpp", "saveModel", "   Creating the label Mat...");
-                //for (int i = 0; i < samples.size(); i++)
-                //{
-                //    //Verifica se já adicionamos esse Label
-                //    if (find(labels.begin(), labels.end(), samples[i].label) == labels.end())
-                //        labels.push_back(samples[i].label);
-                //}
-
-                //for (int i = 0; i < samples.size(); i++)
-                //{
-                //    int label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
-                //    trainingLabel.push_back((float)label_index);
-                //}
-                Log(log_Debug, "model.cpp", "saveModel", "      Done.");
-
-                //-------------------------------------------------------------------
-                //Salva o arquivo dos histogramas (com os dados para serem treinados)
-                Log(log_Debug, "model.cpp", "saveModel", "   Saving labels on file '" + trainingSetFile + "'...");
-                //FileStorage fs(trainingSetFile, FileStorage::WRITE);
-                //fs << "labels" << labels;
-                //fs << "trainingLabel" << trainingLabel;
-                //fs.release();
-                Log(log_Debug, "model.cpp", "saveModel", "      Done.");
-
-            }else
-                Log(log_Debug, "model.cpp", "saveModel", "   Creating labels was not necessary.");
-
-            //-------------------------------------------------------------------
-            //Treina o Support Vector Macinhe
-            Log(log_Debug, "model.cpp", "create", "   Training SVM classifier...");
-
-            //CvSVMParams params;
-            //params.kernel_type = CvSVM::RBF;
-            //params.svm_type = CvSVM::C_SVC;
-            //params.gamma = 0.50625000000000009;
-            //params.C = 312.50000000000000;
-            //params.term_crit = cvTermCriteria(CV_TERMCRIT_ITER, 100, 0.000001);
-            //
-            //bool res = svm.train(trainingData, trainingLabel, cv::Mat(), cv::Mat(), params);
-            //
-            Log(log_Debug, "model.cpp", "create", "      Done.");
-*/

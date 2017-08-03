@@ -50,19 +50,16 @@ int main(int argc, char **argv){
             Log(log_Debug, "main.cpp", "main", "   Matching: '%s'", mod.getMatcherName().c_str());
             Log(log_Debug, "main.cpp", "main", "   Binarization: '%s'", mod.getBinarizationName().c_str());
 
-            //Creates the model based on the input sample folder, using the folder name as labels
-            if(mod.create(inputPath)){
+            if(mod.initializeModules){
+                if(mod.create(inputPath)){
+                    if(mod.save())
+                        Log(log_Debug, "main.cpp", "main", "      Model was saved");
+                    else
+                        Log(log_Debug, "main.cpp", "main", "      Failed to save model!");
+                }
+            }
 
-                //Saves the model
-                if(mod.save())
-                    Log(log_Debug, "main.cpp", "main", "      Model was saved");
-                else
-                    Log(log_Debug, "main.cpp", "main", "      Failed to save model!");
-
-            }else
-                Log(log_Debug, "main.cpp", "main", "Failed to create model!");
-
-        //Is it the testing mode?
+            //Is it the testing mode?
         }else if (mode == "-c" || mode == "-C") {
 
             Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
