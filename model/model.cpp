@@ -1,7 +1,31 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
+//      -----------------------+------------------------------+
+//      |      TRAINING:       |        CLASSIFYING           |
+//      +----------------------+------------------------------+
+//      | List files           | List file or folder          |
+//      +----------------------+------------------------------+
+//      | Iterate Files        |                              |
+//      |    Extract samples   |                              |
+//      +----------------------+------------------------------+
+//      | Iterate samples      | Load dictionary from file    |
+//      |    Extract features  |                              |
+//      | Create Dictionary    |                              |
+//      +----------------------+------------------------------+
+//      | Iterate Samples      | Load labels from file        |
+//      |    Create Labels     |                              |
+//      +----------------------+------------------------------+
+//      | Iterate Samples      | Load training set from file  |
+//      |    Extract features  |                              |
+//      | Create Training Set  |                              |
+//      +----------------------+------------------------------+
+//      | Train                | Predict                      |
+//      +----------------------+------------------------------+
+
+
 #include "model.h"
+
 
 bool Model::create(string sampleFolder){
 
@@ -74,6 +98,28 @@ bool Model::create(string sampleFolder){
                     if(createDictionary()){
 
                         if(prepareTrainingSet()){
+
+                            startSubtask = getTick();
+
+                            Log(log_Debug, "model.cpp", "saveModel", "   Preparing labels...");
+                            vector<String>	labels;
+                            for (int i = 0; i < samples.size(); i++)
+                            {
+                                //Verifica se já adicionamos esse Label
+                                if (find(labels.begin(), labels.end(), samples[i].label) == labels.end())
+                                    labels.push_back(samples[i].label.c_str());
+                            }
+
+                            for (int i = 0; i < labels.size(); i++)
+                                Log(log_Debug, "model.cpp", "create", "      Label %i is '%s'.", (i+1), labels[i].c_str());
+
+                            for (int i = 0; i < samples.size(); i++)
+                            {
+                                int label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
+                                trainingLabel.push_back((float)label_index);
+                            }
+
+                            Log(log_Debug, "model.cpp", "create", "      Done. Preparing the labels took %s seconds.", getDifString(startSubtask).c_str());
 
                             startSubtask = getTick();
 
@@ -358,7 +404,7 @@ bool Model::prepareTrainingSet() {
         trainingData.push_back(descriptor);
 
         Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding label '%s' to training data...", samples[i].label);
-        trainingLabel.push_back(samples[i].label);
+        //trainingLabel.push_back(samples[i].label);
 
     }
 
