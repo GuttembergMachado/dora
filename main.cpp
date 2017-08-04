@@ -10,9 +10,9 @@ using namespace std;
 int main(int argc, char **argv){
 
     //#include <tesseract/baseapi.h>
-        //tesseract::TessBaseAPI ocr;
+    //tesseract::TessBaseAPI ocr;
 
-    Model 		mod;  	//O modelo de documento
+    Model mod;
 
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
     Log(log_Error, "main.cpp", "main", "DORA: Document Analysis and Recognition");
@@ -20,7 +20,7 @@ int main(int argc, char **argv){
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
     Log(log_Error, "main.cpp", "main", "Displaying %s.", getLogMode().c_str());
 
-    //Checks if the number of parametes is right
+    //Checks if the number of parameters is right
     if (argc == 4){
 
         string mode = argv[1];
@@ -50,7 +50,7 @@ int main(int argc, char **argv){
             Log(log_Debug, "main.cpp", "main", "   Matching: '%s'", mod.getMatcherName().c_str());
             Log(log_Debug, "main.cpp", "main", "   Binarization: '%s'", mod.getBinarizationName().c_str());
 
-            if(mod.initializeModules){
+            if(mod.initialize()){
                 if(mod.create(inputPath)){
                     if(mod.save())
                         Log(log_Debug, "main.cpp", "main", "      Model was saved");

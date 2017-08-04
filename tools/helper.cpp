@@ -52,7 +52,7 @@ void Log(logMode mode, string moduleName, string procedureName, string informati
 
 		//Formata o nome da procedure com 20 chars
 		procedureName.append("                    ");
-		procedureName = procedureName.substr(0, 20);
+		procedureName = procedureName.substr(0, 22);
 
 		//Monta o texto que será logado
 		buffer = moduleName + " | " + procedureName + " | ";

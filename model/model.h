@@ -7,6 +7,8 @@
 
 #include <opencv2/features2d.hpp>  //FeatureDetector, DescriptorExtractor, BOWTrainer, DescriptorMatcher
 #include <opencv2/xfeatures2d/nonfree.hpp>   //SiftFeatureDetector, SiftDescriptorExtractor, SurfFeatureDetector, SurfDescriptorExtractor
+#include <opencv2/ml.hpp> //SVM
+
 
 #include "../tools/helper.h"
 #include "sample.h"
@@ -14,6 +16,7 @@
 using namespace std;
 using namespace cv;
 using namespace xfeatures2d;
+using namespace ml;
 
 enum enumModels
 {
@@ -47,16 +50,19 @@ enum enumMatchers
 class Model {
     vector<Sample>	            samples;
 	bool             			createDictionary();
-	bool 						createHistograms();
-	bool             			loadDictionary();
+	bool 						prepareTrainingSet();
     Ptr<FeatureDetector>        detector;
     Ptr<DescriptorExtractor>    extractor;
     Ptr<BOWTrainer>	            trainer;
     Ptr<DescriptorMatcher>      matcher;
+    Ptr<SVM>                    svm;
 	Mat							dictionary;
     int					        dictionarySize;
 	int 						minDimension = 50;
 	int 						maxDimension = 720;
+    Mat							trainingLabel;
+    Mat							trainingData;
+    vector<String>			    labels;
 public:
 	enumModels       classificationModel;
 	enumFeatures     featureType;
@@ -74,6 +80,7 @@ public:
 	bool             load();
 	bool             save();
 	bool             initialize();
+    bool             classify(string path);
 
 };
 #endif
