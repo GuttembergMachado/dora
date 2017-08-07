@@ -97,34 +97,34 @@ bool Model::create(string sampleFolder){
 
                     if(createDictionary()){
 
-                        if(prepareTrainingSet()){
+                        if(prepareTrainingSet()) {
 
                             startSubtask = getTick();
 
-                            Log(log_Debug, "model.cpp", "saveModel", "   Preparing labels...");
-                            vector<String>	labels;
-                            for (int i = 0; i < samples.size(); i++)
-                            {
-                                //Verifica se já adicionamos esse Label
-                                if (find(labels.begin(), labels.end(), samples[i].label) == labels.end())
+                            Log(log_Debug, "model.cpp", "create", "   Preparing labels (Label Type: ...");
+                            vector<String> labels;
+                            for (int i = 0; i < samples.size(); i++) {
+
+                                //Gets the label position from the label array
+                                float label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
+
+                                //Check if the label was already added to the label array
+                                if (label_index >= 0) {
+                                    //Adds the sample label to the label array
                                     labels.push_back(samples[i].label.c_str());
+                                    //associate this sample with this label index
+                                    trainingLabel.push_back(labels.size());
+                                } else{
+                                    //associate this sample with this label index
+                                    trainingLabel.push_back(label_index);
+                                }
                             }
-
-                            for (int i = 0; i < labels.size(); i++)
-                                Log(log_Debug, "model.cpp", "create", "      Label %i is '%s'.", (i+1), labels[i].c_str());
-
-                            for (int i = 0; i < samples.size(); i++)
-                            {
-                                int label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
-                                trainingLabel.push_back((float)label_index);
-                            }
-
                             Log(log_Debug, "model.cpp", "create", "      Done. Preparing the labels took %s seconds.", getDifString(startSubtask).c_str());
 
                             startSubtask = getTick();
 
                             Log(log_Error, "model.cpp", "create", "   Training the SVM...");
-                            bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);
+                            bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
                             if(res)
                                 Log(log_Debug, "model.cpp", "create", "      Done. Training took %s seconds.", getDifString(startSubtask).c_str());
                             else
@@ -305,6 +305,9 @@ bool Model::initialize(){
         svm->setGamma(0.50625000000000009);
         svm->setC(312.50000000000000);
         svm->setTermCriteria(TermCriteria(CV_TERMCRIT_ITER, 100, 0.000001));
+
+        trainingLabel = Mat(0,1,CV_32S);
+        trainingData = Mat(0, dictionarySize, CV_32FC1);
 
         return true;
 

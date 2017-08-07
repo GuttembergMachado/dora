@@ -57,11 +57,11 @@ class Model {
     Ptr<DescriptorMatcher>      matcher;
     Ptr<SVM>                    svm;
 	Mat							dictionary;
-    int					        dictionarySize;
+    int					        dictionarySize=1500;
 	int 						minDimension = 50;
 	int 						maxDimension = 720;
-    Mat							trainingLabel;
-    Mat							trainingData;
+    Mat							trainingLabel;            //This mat contains labels for each training feature. In KNN it is a Nx1 matrix, where N is the number of training samples. The value of each row is the truth label of the corresponding sample. The type of this mat should be CV_32S
+    Mat							trainingData;   //This mat contains each features vector as a row. The number of rows is the number of training samples and the number of columns is the size of one features vector
     vector<String>			    labels;
 public:
 	enumModels       classificationModel;
