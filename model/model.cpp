@@ -79,14 +79,14 @@ bool Model::create(string sampleFolder){
                                 //Uses the folder as the label
                                 s.label = replace(getFolderName(s.filename), sampleFolder, "");
                                 samples.push_back(s);
-                                Log(log_Detail, "model.cpp", "create", "         File '%s' was loaded as sample %i...", files[i].c_str(), (samples.size() +1)) ;
+                                Log(log_Debug, "model.cpp", "create","      File '%s' was loaded as sample %i...", files[i].c_str(), (samples.size() +1)) ;
                                 s.dump();
 
                             }else{
-                                Log(log_Error, "model.cpp", "create", "         File '%s' was ignored because it is larger than %i pixels!!", files[i].c_str(), maxDimension);
+                                Log(log_Error, "model.cpp", "create", "      Ignoring file '%s' because it is larger than %i pixels!!", files[i].c_str(), maxDimension);
                             }
                         }else{
-                            Log(log_Error, "model.cpp", "create", "         File '%s' was ignored because it is smaller than %i pixels!", files[i].c_str(), minDimension);
+                            Log(log_Error, "model.cpp", "create", "      Ignoring file '%s' because it is smaller than %i pixels!", files[i].c_str(), minDimension);
                         }
                     }
                 }
@@ -99,31 +99,10 @@ bool Model::create(string sampleFolder){
 
                         if(prepareTrainingSet()) {
 
-                            startSubtask = getTick();
-
-                            Log(log_Debug, "model.cpp", "create", "   Preparing labels (Label Type: ...");
-                            vector<String> labels;
-                            for (int i = 0; i < samples.size(); i++) {
-
-                                //Gets the label position from the label array
-                                float label_index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
-
-                                //Check if the label was already added to the label array
-                                if (label_index >= 0) {
-                                    //Adds the sample label to the label array
-                                    labels.push_back(samples[i].label.c_str());
-                                    //associate this sample with this label index
-                                    trainingLabel.push_back(labels.size());
-                                } else{
-                                    //associate this sample with this label index
-                                    trainingLabel.push_back(label_index);
-                                }
-                            }
-                            Log(log_Debug, "model.cpp", "create", "      Done. Preparing the labels took %s seconds.", getDifString(startSubtask).c_str());
-
-                            startSubtask = getTick();
-
                             Log(log_Error, "model.cpp", "create", "   Training the SVM...");
+                            Log(log_Error, "model.cpp", "create", "      TrainindData is %s, has %i channels, %i rows and %i cols.", getMatType(trainingData).c_str(), trainingData.channels(), trainingData.rows, trainingData.cols);
+                            Log(log_Error, "model.cpp", "create", "      TrainingLabel is %s, has %i channels, %i rows and %i cols.", getMatType(trainingLabel).c_str(), trainingLabel.channels(), trainingLabel.rows, trainingLabel.cols );
+                            startSubtask = getTick();
                             bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
                             if(res)
                                 Log(log_Debug, "model.cpp", "create", "      Done. Training took %s seconds.", getDifString(startSubtask).c_str());
@@ -233,12 +212,24 @@ bool Model::save(){
 bool Model::initialize(){
 
     try{
+        //TODO: 1) ALL THE 'initialize functions' from OPENCV changed from version 2.x to 3.x.  CHECK THIS CAREFULLY
+        //TODO: 2) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
 
-        //TODO: Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
+        Log(log_Error, "model.cpp", "initialize", "      Setting dictionary size to 1500...");
         dictionarySize = 1500;
+        Log(log_Error, "model.cpp", "initialize", "         Done.");
 
-        //TODO: ALL THE 'initialize functions' from OPENCV changed from version 2.x to 3.x.  CHECK THIS CAREFULLY
+        Log(log_Error, "model.cpp", "initialize", "      Redefining original training data mat type as CV_32S (currentlly it is type %s)...", getMatType(trainingData).c_str());
+        //This mat contains each features vector as a row. The number of rows is the number of training samples and the number of columns is the size of one features vector
+        //originally: Mat trainingData(0, dictionarySize, CV_32FC1);
+        trainingData  = Mat(0, dictionarySize, CV_32S);
+        Log(log_Error, "model.cpp", "initialize", "         Done. TrainingData mat is now type '%s'. ",  getMatType(trainingData).c_str());
 
+        Log(log_Error, "model.cpp", "initialize", "      Redefining original training label mat type as CV_32S(currentlly it is type %s)...", getMatType(trainingLabel).c_str());
+        //This mat contains labels for each training feature. In KNN it is a Nx1 matrix, where N is the number of training samples. The value of each row is the truth label of the corresponding sample. The type of this mat should be CV_32S
+        //originally: Mat trainingLabel(0, 1, CV_32FC1)
+        trainingLabel = Mat(0, 1, CV_32S);
+        Log(log_Error, "model.cpp", "initialize", "         Done. TrainingLabel mat is now type '%s'.", getMatType(trainingLabel).c_str());
 
         Log(log_Error, "model.cpp", "initialize", "      Initializing detector module: '" + getFeatureName() + "'...");
         switch (featureType)
@@ -285,34 +276,32 @@ bool Model::initialize(){
         switch (classificationModel)
         {
             case model_BAG_OF_FEATURES:{
-                Log(log_Error, "model.cpp", "initialize", "         Creating trainner...");
                 trainer = new BOWKMeansTrainer(dictionarySize,  TermCriteria(CV_TERMCRIT_ITER, 10, 0.001), 1, KMEANS_PP_CENTERS);
+                Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
             }
             case model_PROJECTION:{
-                Log(log_Error, "model.cpp", "initialize", "         MODEL '" + getModelName() + "' NOT IMPLEMENTED.");
+                Log(log_Error, "model.cpp", "initialize", "         TRAINER '" + getModelName() + "' NOT IMPLEMENTED.");
                 return false;
             }
 
         }
 
-        Log(log_Error, "model.cpp", "create", "   Creating SVM (Suport Vector Machine)...");
+        Log(log_Error, "model.cpp", "initialize", "      Creating SVM (Suport Vector Machine)...");
         svm = SVM::create();
+        Log(log_Error, "model.cpp", "initialize", "         Done.");
 
-        Log(log_Error, "model.cpp", "create", "   Configuring SVM params...");
+        Log(log_Error, "model.cpp", "initialize", "      Configuring SVM params...");
         svm->setKernel(SVM::RBF);
         svm->setType(SVM::C_SVC);
         svm->setGamma(0.50625000000000009);
         svm->setC(312.50000000000000);
         svm->setTermCriteria(TermCriteria(CV_TERMCRIT_ITER, 100, 0.000001));
-
-        trainingLabel = Mat(0,1,CV_32S);
-        trainingData = Mat(0, dictionarySize, CV_32FC1);
-
+        Log(log_Error, "model.cpp", "initialize", "         Done.");
         return true;
 
     }catch(const std::exception& e){
-        Log(log_Error, "model.cpp", "create",  "   Error creating model: %s", e.what()) ;
+        Log(log_Error, "model.cpp", "initialize",  "   Error creating model: %s", e.what()) ;
     }
 
 }
@@ -323,7 +312,7 @@ bool Model::createDictionary() {
     int64 startSubtask;
 
     vector<KeyPoint> keypoints;
-    Mat descriptor;
+    Mat descriptors;
 
     startSubtask= getTick();
 
@@ -342,12 +331,11 @@ bool Model::createDictionary() {
 
             //Get the descriptors for each keypoint
             Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features...");
-            extractor->compute(m, keypoints, descriptor);
+            extractor->compute(m, keypoints, descriptors);
 
             //Adds the descriptor to the trainer
             Log(log_Detail, "model.cpp", "createDictionary", "            Saving descriptors...");
-            if (!descriptor.empty())
-                trainer->add(descriptor);
+            trainer->add(descriptors);
 
         }
     }
@@ -379,39 +367,63 @@ bool Model::createDictionary() {
 bool Model::prepareTrainingSet() {
 
     int64 startTask = getTick();
+    int64 startSubtask;
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Preparing training data from all %i samples...", samples.size());
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Preparing training set (using all %i samples)...", samples.size());
 
     Log(log_Error, "model.cpp", "prepareTrainingSet", "         Creating bag of words extractor...");
     BOWImgDescriptorExtractor bow(extractor, matcher);
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done.");
 
     Log(log_Error, "model.cpp", "prepareTrainingSet", "         Setting vocabulary...");
     bow.setVocabulary(dictionary);
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done.");
 
     vector<KeyPoint> keypoints;
-    Mat descriptor;
+    Mat descriptors;
 
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Preparing data (trainingData mat is '%s')...", getMatType(trainingData).c_str());
+    startSubtask = getTick();
     for (int i = 0; i < samples.size(); i++) {
 
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Preparing sample %05d...", (i+1));
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Preparing sample %05d...", (i + 1));
 
         //Get the keypoints
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Extracting features (key points)...");
+        Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Extracting features (key points)...");
         detector->detect(samples[i].binaryMat, keypoints);
 
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Computing descriptors from features (key points)...");
-        bow.compute(samples[i].binaryMat, keypoints, descriptor);
+        Log(log_Detail, "model.cpp", "prepareTrainingSet","               Computing descriptors from features (key points)...");
+        bow.compute(samples[i].binaryMat, keypoints, descriptors);
 
         //Adds the descriptor to the trainning array
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding descriptors to training data...");
-        trainingData.push_back(descriptor);
-
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding label '%s' to training data...", samples[i].label);
-        //trainingLabel.push_back(samples[i].label);
+        Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Adding descriptors to training data...");
+        trainingData.push_back(descriptors);
 
     }
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing data took %s seconds (trainingData mat is '%s')", getDifString(startSubtask).c_str(), getMatType(trainingData).c_str() );
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Done. Preparing training data took %s seconds.",  getDifString(startTask).c_str());
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Checking labels...", getMatType(trainingLabel).c_str());
+    startSubtask = getTick();
+    for (int i = 0; i < samples.size(); i++) {
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label of sample %05d is '%s'...", (i + 1), samples[i].label.c_str());
+
+        //Check if the label was already added to the label array
+        if (find(labels.begin(), labels.end(), samples[i].label) == labels.end()){
+            labels.push_back(samples[i].label.c_str());
+            Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label %i is '%s'.",labels.size(), samples[i].label.c_str());
+        }
+    }
+
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Preparing label mat...");
+    for (int i = 0; i < samples.size(); i++) {
+        float index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            trainingLabel[%i] = '%s' (Labels[%i])...", (i + 1), samples[i].label.c_str(), index );
+        trainingLabel.push_back(index);
+    }
+
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing labels took %s seconds (trainingLabel mat is '%s')", getDifString(startSubtask).c_str(), getMatType(trainingLabel).c_str() );
+
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Done. Preparing training set took %s seconds.",  getDifString(startTask).c_str());
     return isMatValid(trainingData);
 
 }
@@ -464,6 +476,19 @@ bool Model::classify(string path){
 
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDifString(startTask).c_str());
 
+}
+
+string Model::getMatType(Mat m){
+    switch (m.type()){
+        case CV_8U:   return "CV_8U";
+        case CV_8S:   return "CV_8S";
+        case CV_16U:  return "CV_16U";
+        case CV_16S:  return "CV_16S";
+        case CV_32S:  return "CV_32S";
+        case CV_32F:  return "CV_32F";
+        case CV_64F:  return "CV_64F";
+        default:      return "UNKNONW";
+    }
 }
 
 string Model::getModelName(){

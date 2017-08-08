@@ -8,7 +8,7 @@ bool fixJPEGError = false;
 bool Sample::load(string sampleFilename) {
 
     try {
-        Log(log_Debug, "sample.cpp", "load", "      Loading file '%s'...", sampleFilename.c_str());
+        Log(log_Detail, "sample.cpp", "load", "      Loading file '%s'...", sampleFilename.c_str());
 
         filename = sampleFilename;
 
