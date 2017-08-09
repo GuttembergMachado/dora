@@ -58,7 +58,7 @@ class Model {
     Ptr<SVM>                    svm;
 	Mat							dictionary;
     int					        dictionarySize = 1500;
-	int 						minDimension = 50;
+	int 						minDimension = 70;
 	int 						maxDimension = 720;
 	Mat							trainingData;
 	Mat							trainingLabel;

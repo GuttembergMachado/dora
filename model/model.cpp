@@ -79,18 +79,18 @@ bool Model::create(string sampleFolder){
                                 //Uses the folder as the label
                                 s.label = replace(getFolderName(s.filename), sampleFolder, "");
                                 samples.push_back(s);
-                                Log(log_Debug, "model.cpp", "create","      File '%s' was loaded as sample %i...", files[i].c_str(), (samples.size() +1)) ;
+                                Log(log_Debug, "model.cpp", "create","      File %05d was LOADED as Sample %i ('%s')...", (i + 1), samples.size(), files[i].c_str()) ;
                                 s.dump();
 
                             }else{
-                                Log(log_Error, "model.cpp", "create", "      Ignoring file '%s' because it is larger than %i pixels!!", files[i].c_str(), maxDimension);
+                                Log(log_Error, "model.cpp", "create", "       File %05d was IGNORED because it is LARGER than %i pixels ('%s')!", (i + 1), maxDimension, files[i].c_str());
                             }
                         }else{
-                            Log(log_Error, "model.cpp", "create", "      Ignoring file '%s' because it is smaller than %i pixels!", files[i].c_str(), minDimension);
+                            Log(log_Error, "model.cpp", "create", "      File %05d was IGNORED because it is SMALLER than %i pixels ('%s')!", (i + 1), minDimension, files[i].c_str());
                         }
                     }
                 }
-                Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples out of %i files in %s seconds.", samples.size(), files.size(), getDifString(startSubtask).c_str());
+                Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples from %i files in %s seconds.", (samples.size()), files.size(), getDifString(startSubtask).c_str());
 
                 //Did we manage to load any file at all?
                 if(samples.size() > 0) {
@@ -103,6 +103,10 @@ bool Model::create(string sampleFolder){
                             Log(log_Error, "model.cpp", "create", "      TrainindData is %s, has %i channels, %i rows and %i cols.", getMatType(trainingData).c_str(), trainingData.channels(), trainingData.rows, trainingData.cols);
                             Log(log_Error, "model.cpp", "create", "      TrainingLabel is %s, has %i channels, %i rows and %i cols.", getMatType(trainingLabel).c_str(), trainingLabel.channels(), trainingLabel.rows, trainingLabel.cols );
                             startSubtask = getTick();
+
+                            //TODO: THERE'S STILL A BUG HERE, BECAUSE TrainindData AND TrainingLabel SHOULD NOT HAVE DIFFERENT DIMENSIONS (COLS, IN OUR CASE)
+                            //      The TrainingLabel has the correct size, but training data has less items than it shold.
+
                             bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
                             if(res)
                                 Log(log_Debug, "model.cpp", "create", "      Done. Training took %s seconds.", getDifString(startSubtask).c_str());
@@ -113,7 +117,6 @@ bool Model::create(string sampleFolder){
                             return res;
                         }
                     }
-
                 }else
                     Log(log_Debug, "model.cpp", "create", "   No samples found.");
             }else
@@ -379,8 +382,6 @@ bool Model::prepareTrainingSet() {
     bow.setVocabulary(dictionary);
     Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done.");
 
-    vector<KeyPoint> keypoints;
-    Mat descriptors;
 
     Log(log_Error, "model.cpp", "prepareTrainingSet", "         Preparing data (trainingData mat is '%s')...", getMatType(trainingData).c_str());
     startSubtask = getTick();
@@ -388,40 +389,64 @@ bool Model::prepareTrainingSet() {
 
         Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Preparing sample %05d...", (i + 1));
 
+        vector<KeyPoint> keypoints;
+        Mat descriptors;
+
+        //TODO SOMETHING HERE FAILS AND FORCES AN ITEM OUT OF THE TRAINING MAT.   CHECK THIS LATER
+        //ja falha no sample 38  (que nao é adicionado)
         //Get the keypoints
         Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Extracting features (key points)...");
         detector->detect(samples[i].binaryMat, keypoints);
+        if(keypoints.size() > 0) {
 
-        Log(log_Detail, "model.cpp", "prepareTrainingSet","               Computing descriptors from features (key points)...");
-        bow.compute(samples[i].binaryMat, keypoints, descriptors);
-
-        //Adds the descriptor to the trainning array
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Adding descriptors to training data...");
-        trainingData.push_back(descriptors);
+            Log(log_Detail, "model.cpp", "prepareTrainingSet",  "               Computing descriptors from features (key points)...");
+            bow.compute(samples[i].binaryMat, keypoints, descriptors);
+            if (descriptors.cols >= 0){
+                //Adds the descriptor to the trainning array
+                Log(log_Debug, "model.cpp", "prepareTrainingSet", "               Adding %i descriptors to trainingData mat (that has '%i' items so far)...", descriptors.size(), trainingData.rows);
+                trainingData.push_back(descriptors);
+            }else{
+                Log(log_Error, "model.cpp", "prepareTrainingSet", "               No descriptors were found on sample %i ('%s'), eventhough %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
+            }
+        }else{
+            Log(log_Error, "model.cpp", "prepareTrainingSet", "               No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
+        }
 
     }
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing data took %s seconds (trainingData mat is '%s')", getDifString(startSubtask).c_str(), getMatType(trainingData).c_str() );
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing data from all %i samples took %s seconds (trainingData mat is '%s')", samples.size() , getDifString(startSubtask).c_str(), getMatType(trainingData).c_str() );
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Checking labels...", getMatType(trainingLabel).c_str());
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Checking labels (labels is a vector<string> of size %i)...", labels.size());
     startSubtask = getTick();
     for (int i = 0; i < samples.size(); i++) {
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label of sample %05d is '%s'...", (i + 1), samples[i].label.c_str());
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Checking sample %05d: Label is '%s'...", (i + 1), samples[i].label.c_str());
 
         //Check if the label was already added to the label array
         if (find(labels.begin(), labels.end(), samples[i].label) == labels.end()){
             labels.push_back(samples[i].label.c_str());
-            Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label %i is '%s'.",labels.size(), samples[i].label.c_str());
+            Log(log_Debug, "model.cpp", "prepareTrainingSet", "               Label '%s' (from sample %05d) was add at the lastest position of the labels array ('%i').", samples[i].label.c_str(), (i + 1), labels.size());
         }
     }
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Done. Checking all %i labels took '%s' and created an %i unique labels vector...", samples.size(),  getDifString(startSubtask).c_str(), labels.size());
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Preparing label mat...");
+
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Preparing label mat (trainingLabel mat is '%s')...", getMatType(trainingLabel).c_str());
+    startSubtask = getTick();
     for (int i = 0; i < samples.size(); i++) {
-        float index = find(labels.begin(), labels.end(), samples[i].label) - labels.begin();
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            trainingLabel[%i] = '%s' (Labels[%i])...", (i + 1), samples[i].label.c_str(), index );
-        trainingLabel.push_back(index);
-    }
 
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing labels took %s seconds (trainingLabel mat is '%s')", getDifString(startSubtask).c_str(), getMatType(trainingLabel).c_str() );
+        //TODO:  There was a bug here (getting the vector<string> index, so I changed to the for loop below until I found out what is wrong with the linux FIND function
+        //float index = distance(labels.begin(), find(labels.begin(), labels.end(), samples[i].label));
+        //float index = find(labels.begin(), labels.end(), samples[i].label) - labels.end();
+
+        for (int k = 0; k < labels.size(); k++){
+            if(labels[k] == samples[i].label){
+                Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label index of sample %05d ('%s') is %i...", (i + 1), labels[k].c_str(), k );
+                trainingLabel.push_back(k);
+                break;
+            }
+        }
+
+    }
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing the trainingLabel from all %i samples took %s seconds (trainingLabel mat is '%s')", samples.size(), getDifString(startSubtask).c_str(), getMatType(trainingLabel).c_str() );
 
     Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Done. Preparing training set took %s seconds.",  getDifString(startTask).c_str());
     return isMatValid(trainingData);
