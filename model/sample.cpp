@@ -47,34 +47,70 @@ bool Sample::load(string sampleFilename) {
     return false;
 }
 
-bool Sample::create_grayscale(){
+bool Sample::createWorkMat(int width, int height){
 
-    try {
-        Log(log_Detail, "sample.cpp", "create_grayscale", "      Creating grayscale mat from original mat...");
+    try{
+        Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating a resized (W:%i, H%i) work mat from original mat...", width, height);
 
-        if(isMatValid(originalMat)){
+        if(isMatValid(originalMat)) {
 
-            //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
-            cvtColor(originalMat, grayMat, CV_BGR2GRAY);
+            //INTER_NEAREST  - a nearest-neighbor interpolation
+            //INTER_LINEAR   - a bilinear interpolation (used by default)
+            //INTER_AREA     - a resampling using pixel area relation. It may be a preferred method for image decimation, as it gives moire’-free results. But when the image is zoomed, it is similar to the INTER_NEAREST method
+            //INTER_CUBIC    - a bicubic interpolation over 4x4 pixel neighborhood
+            //INTER_LANCZOS4 - a Lanczos interpolation over 8x8 pixel neighborhood
+            //
+            //To shrink an image, it will generally look best with CV_INTER_AREA interpolation,
+            //To enlarge an image, it will generally look best with CV_INTER_CUBIC (slow) or CV_INTER_LINEAR (faster but still looks OK).
 
-            if(isMatValid(grayMat)){
-                Log(log_Detail, "sample.cpp", "create_grayscale", "      Grayscale mat created.");
+            //TODO:  Fazer o resize respeitando o aspect ratio
+            // Size s = Size(width, height);
+            Size s = Size(originalMat.cols, originalMat.rows);
+
+            resize(originalMat, workMat, s, 0, 0, INTER_CUBIC);
+
+            if(isMatValid(workMat)){
+                Log(log_Detail, "sample.cpp", "createWorkMat", "      Working mat created.");
                 return true;
             }
         }
 
     }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "create_grayscale",  "         Failed to create mat: %s", e.what() ) ;
+        Log(log_Error, "sample.cpp", "createWorkMat",  "         Failed to create mat: %s", e.what() ) ;
     }
 
-    Log(log_Warning, "sample.cpp", "create_grayscale", "      Creating grayscale mat failed.");
+    Log(log_Warning, "sample.cpp", "createWorkMat", "      Creating working mat failed.");
     return false;
 }
 
-bool Sample::create_binary(enumBinarization binMethod){
+bool Sample::createGrayscaleMat(){
+
+    try {
+        Log(log_Detail, "sample.cpp", "createGrayscaleMat", "      Creating grayscale mat from original mat...");
+
+        if(isMatValid(workMat)){
+
+            //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
+            cvtColor(workMat, grayMat, CV_BGR2GRAY);
+
+            if(isMatValid(grayMat)){
+                Log(log_Detail, "sample.cpp", "createGrayscaleMat", "      Grayscale mat created.");
+                return true;
+            }
+        }
+
+    }catch(const std::exception& e){
+        Log(log_Error, "sample.cpp", "createGrayscaleMat",  "         Failed to create mat: %s", e.what() ) ;
+    }
+
+    Log(log_Warning, "sample.cpp", "createGrayscaleMat", "      Creating grayscale mat failed.");
+    return false;
+}
+
+bool Sample::createBinaryMat(enumBinarization binMethod){
 
     try{
-        Log(log_Detail, "sample.cpp", "create_binary", "      Creating binary mat from gray mat...");
+        Log(log_Detail, "sample.cpp", "createBinaryMat", "      Creating binary mat from gray mat...");
 
         if(isMatValid(grayMat)) {
 
@@ -82,23 +118,23 @@ bool Sample::create_binary(enumBinarization binMethod){
             binarize(grayMat, binaryMat, binMethod);
 
             if(isMatValid(binaryMat)){
-                Log(log_Detail, "sample.cpp", "create_binary", "      Binary mat created.");
+                Log(log_Detail, "sample.cpp", "createBinaryMat", "      Binary mat created.");
                 return true;
             }
         }
 
     }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "create_binary",  "         Failed to create mat: %s", e.what() ) ;
+        Log(log_Error, "sample.cpp", "createBinaryMat",  "         Failed to create mat: %s", e.what() ) ;
     }
 
-    Log(log_Warning, "sample.cpp", "create_binary", "      Creating binary mat failed.");
+    Log(log_Warning, "sample.cpp", "createBinaryMat", "      Creating binary mat failed.");
     return false;
 }
 
-bool Sample::create_XYCut(){
+bool Sample::createXYCutMat(){
 
     try{
-        Log(log_Detail, "sample.cpp", "create_XYCut", "      Creating XYCut mats from binary mat...");
+        Log(log_Detail, "sample.cpp", "createXYCutMat", "      Creating XYCut mats from binary mat...");
 
         if(isMatValid(binaryMat)) {
 
@@ -107,16 +143,16 @@ bool Sample::create_XYCut(){
                     if(getXYCut(binaryMat, XYCutMat));
 
             if(isMatValid(xCutMat) && isMatValid(yCutMat) && isMatValid(XYCutMat) ){
-                Log(log_Detail, "sample.cpp", "create_XYCut", "      Done. All 3 XYCut mat were created.");
+                Log(log_Detail, "sample.cpp", "createXYCutMat", "      Done. All 3 XYCut mat were created.");
                 return true;
             }
         }
 
     }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "create_XYCut",  "         Failed to create XYCut mats: %s", e.what() ) ;
+        Log(log_Error, "sample.cpp", "createXYCutMat",  "         Failed to create XYCut mats: %s", e.what() ) ;
     }
 
-    Log(log_Warning, "sample.cpp", "create_XYCut", "      Creating XYCut mats failed.");
+    Log(log_Warning, "sample.cpp", "createXYCutMat", "      Creating XYCut mats failed.");
     return false;
 }
 

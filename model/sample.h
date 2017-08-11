@@ -16,6 +16,7 @@ using namespace std;
 using namespace cv;
 
 class Sample{
+
 public:
     string label;
     string filename;
@@ -24,18 +25,18 @@ public:
     int width;
     int height;
     int depth;
-
     Mat originalMat;
+    Mat workMat;
     Mat grayMat;
     Mat binaryMat;
     Mat xCutMat;
     Mat yCutMat;
     Mat XYCutMat;
-
     bool load(string filename);
-    bool create_grayscale();
-    bool create_binary(enumBinarization binMethod);
-    bool create_XYCut();
+    bool createWorkMat(int width, int height);
+    bool createGrayscaleMat();
+    bool createBinaryMat(enumBinarization binMethod);
+    bool createXYCutMat();
     bool save();
     void saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut);
     void dump();

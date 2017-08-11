@@ -49,9 +49,12 @@ int main(int argc, char **argv){
             Log(log_Debug, "main.cpp", "main", "   Features: '%s'", mod.getFeatureName().c_str());
             Log(log_Debug, "main.cpp", "main", "   Matching: '%s'", mod.getMatcherName().c_str());
             Log(log_Debug, "main.cpp", "main", "   Binarization: '%s'", mod.getBinarizationName().c_str());
+            Log(log_Debug, "main.cpp", "main", "   ");
 
             if(mod.initialize()){
+
                 if(mod.create(inputPath)){
+
                     if(mod.save())
                         Log(log_Debug, "main.cpp", "main", "      Model was saved");
                     else

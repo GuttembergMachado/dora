@@ -9,7 +9,6 @@
 #include <opencv2/xfeatures2d/nonfree.hpp>   //SiftFeatureDetector, SiftDescriptorExtractor, SurfFeatureDetector, SurfDescriptorExtractor
 #include <opencv2/ml.hpp> //SVM
 
-
 #include "../tools/helper.h"
 #include "sample.h"
 
@@ -47,10 +46,19 @@ enum enumMatchers
 	matcher_K_MEANS_CLUSTERING = 2,
 };
 
+class Class{
+public:
+	string label;
+	int count;
+	int width;
+	int height;;
+};
+
 class Model {
     vector<Sample>	            samples;
 	bool             			createDictionary();
 	bool 						prepareTrainingSet();
+    bool 						preProcessSamples();
     Ptr<FeatureDetector>        detector;
     Ptr<DescriptorExtractor>    extractor;
     Ptr<BOWTrainer>	            trainer;
@@ -60,10 +68,11 @@ class Model {
     int					        dictionarySize = 1500;
 	int 						minDimension = 70;
 	int 						maxDimension = 720;
+	int 						averageDimension = 200;
 	Mat							trainingData;
 	Mat							trainingLabel;
-	vector<string>			    labels;
     string                      getMatType(Mat m);
+	void 						updateClass(Sample s);
 public:
 	enumModels       classificationModel;
 	enumFeatures     featureType;
@@ -82,6 +91,7 @@ public:
 	bool             save();
 	bool             initialize();
     bool             classify(string path);
-
+	vector<Class>	 sampleClass;
 };
+
 #endif

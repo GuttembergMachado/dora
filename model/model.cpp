@@ -26,103 +26,91 @@
 
 #include "model.h"
 
-
 bool Model::create(string sampleFolder){
 
-	try{
-        int64 startTask = getTick();
-        int64 startSubtask;
+    int64 startTask = getTick();
+    int64 startSubtask;
 
-        vector<string> files;
+	try{
+        Log(log_Error, "model.cpp", "create", "   Creating model...");
 
         //Is the input folder actually an existing folder?
         if(isFolder(sampleFolder)) {
 
             //Load all files recursivelly
-            files = listFiles(sampleFolder);
+            vector<string> files = listFiles(sampleFolder);
+            samples.clear();
 
-            //Is there at least one image file?
-            if (files.size() > 0){
+            Log(log_Debug, "model.cpp", "create", "      Loading samples...");
+            startSubtask = getTick();
+            for (int i = 0; i < files.size(); i++) {
 
-                samples.clear();
+                Sample s;
 
-                Log(log_Debug, "model.cpp", "create", "   Checking files from folder '%s'...", sampleFolder.c_str());
-                startSubtask = getTick();
-                for (int i = 0; i < files.size(); i++) {
+                //Loads the sample
+                if (s.load(files[i])) {
 
-                    Sample s;
+                    //Check if sample is too small
+                    if (s.originalMat.cols > minDimension && s.originalMat.rows > minDimension) {
 
-                    //Loads the sample
-                    if (s.load(files[i])){
+                        //Check if sample needs resizing
+                        if (s.originalMat.cols < maxDimension && s.originalMat.rows < maxDimension) {
 
-                        //Check if sample is too small
-                        if (s.originalMat.cols > minDimension && s.originalMat.rows > minDimension) {
+                            //Uses the folder as the label
+                            s.label = replace(getFolderName(s.filename), sampleFolder, "");
 
-                            //Check if sample needs resizing
-                            if(s.originalMat.cols < maxDimension && s.originalMat.rows < maxDimension) {
+                            //Uses this sample
+                            samples.push_back(s);
 
-                                //Creates grayscale mat of the sample
-                                if(!s.create_grayscale())
-                                    break;
+                            Log(log_Debug, "model.cpp", "create", "         File %05d was LOADED as Sample %i ('%s')...", (i + 1), samples.size(), files[i].c_str());
 
-                                //Creates monochromatic mat of the grayscale sample
-                                if(!s.create_binary(binarizationMethod))
-                                    break;
+                            //Update class statistics
+                            updateClass(s);
 
-                                //Creates XYCut images
-                                if(!s.create_XYCut())
-                                    break;
+                            s.dump();
 
-                                if(saveIntermediateFiles)
-                                    s.saveIntermediate(folder, false, true, false, false, false);
-
-                                //Uses the folder as the label
-                                s.label = replace(getFolderName(s.filename), sampleFolder, "");
-                                samples.push_back(s);
-                                Log(log_Debug, "model.cpp", "create","      File %05d was LOADED as Sample %i ('%s')...", (i + 1), samples.size(), files[i].c_str()) ;
-                                s.dump();
-
-                            }else{
-                                Log(log_Error, "model.cpp", "create", "       File %05d was IGNORED because it is LARGER than %i pixels ('%s')!", (i + 1), maxDimension, files[i].c_str());
-                            }
-                        }else{
-                            Log(log_Error, "model.cpp", "create", "      File %05d was IGNORED because it is SMALLER than %i pixels ('%s')!", (i + 1), minDimension, files[i].c_str());
-                        }
-                    }
+                        }else
+                            Log(log_Error, "model.cpp", "create", "          File %05d was IGNORED because it is LARGER than %i pixels ('%s')!", (i + 1), maxDimension, files[i].c_str());
+                    }else
+                        Log(log_Error, "model.cpp", "create", "         File %05d was IGNORED because it is SMALLER than %i pixels ('%s')!", (i + 1), minDimension, files[i].c_str());
                 }
-                Log(log_Debug, "model.cpp", "create", "      Done. Loaded %i samples from %i files in %s seconds.", (samples.size()), files.size(), getDifString(startSubtask).c_str());
+            }
+            Log(log_Debug, "model.cpp", "create", "         Done. Loaded %i samples from %i files in %s seconds.",(samples.size()), files.size(), getDifString(startSubtask).c_str());
 
-                //Did we manage to load any file at all?
-                if(samples.size() > 0) {
 
-                    if(createDictionary()){
+            Log(log_Debug, "model.cpp", "create", "      Checking all %i classes:", sampleClass.size() );
+            for (int k = 0; k < sampleClass.size(); k++) {
+                Log(log_Debug, "model.cpp", "create", "         Class %i ('%s') has %i samples with an average size of %iW X %iH pixels;", (k + 1), sampleClass[k].label.c_str(), sampleClass[k].count, sampleClass[k].width / sampleClass[k].count,  sampleClass[k].height / sampleClass[k].count );
+            }
+            Log(log_Debug, "model.cpp", "create", "         Done. All classes were checked.", sampleClass.size() );
 
-                        if(prepareTrainingSet()) {
+            //Creates the dictionary
+            if(preProcessSamples()) {
 
-                            Log(log_Error, "model.cpp", "create", "   Training the SVM...");
-                            Log(log_Error, "model.cpp", "create", "      TrainindData is %s, has %i channels, %i rows and %i cols.", getMatType(trainingData).c_str(), trainingData.channels(), trainingData.rows, trainingData.cols);
-                            Log(log_Error, "model.cpp", "create", "      TrainingLabel is %s, has %i channels, %i rows and %i cols.", getMatType(trainingLabel).c_str(), trainingLabel.channels(), trainingLabel.rows, trainingLabel.cols );
-                            startSubtask = getTick();
+                //Creates the dictionary
+                if(createDictionary()){
 
-                            //TODO: THERE'S STILL A BUG HERE, BECAUSE TrainindData AND TrainingLabel SHOULD NOT HAVE DIFFERENT DIMENSIONS (COLS, IN OUR CASE)
-                            //      The TrainingLabel has the correct size, but training data has less items than it shold.
+                    //Creates the training set (data + labels)
+                    if(prepareTrainingSet()) {
 
-                            bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
-                            if(res)
-                                Log(log_Debug, "model.cpp", "create", "      Done. Training took %s seconds.", getDifString(startSubtask).c_str());
-                            else
-                                Log(log_Debug, "model.cpp", "create", "      Done. Training failed after %s seconds.", getDifString(startSubtask).c_str());
+                        Log(log_Error, "model.cpp", "create", "   Training the SVM...");
+                        startSubtask = getTick();
+                        bool res = svm->train(trainingData, ROW_SAMPLE, trainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
+                        Log(log_Error, "model.cpp", "create", "   Done training model in %s seconds.", getDifString(startSubtask).c_str());
 
-                            Log(log_Error, "model.cpp", "create", "   Done creating model after %s seconds.", getDifString(startTask).c_str());
-                            return res;
-                        }
-                    }
+                        Log(log_Error, "model.cpp", "create", "   Done. Creating model %s %s seconds.", (res ? "took" : "failed after"), getDifString(startTask).c_str());
+                        return res;
+
+                    }else
+                        Log(log_Debug, "model.cpp", "create", "   Failed to prepare training set!");
+
                 }else
-                    Log(log_Debug, "model.cpp", "create", "   No samples found.");
+                    Log(log_Debug, "model.cpp", "create", "   Failed to create dictionary!");
             }else
-                Log(log_Error, "model.cpp", "create", "   Failed to find sample folder '%s'", sampleFolder.c_str() );
+                Log(log_Debug, "model.cpp", "create", "   Failed to pre-process samples!");
         }else
-            Log(log_Error, "model.cpp", "create",  "   Sample folder contains no files.");
+            Log(log_Error, "model.cpp", "create",  "   Sample folder does not exit!");
+
     }catch(const std::exception& e){
         Log(log_Error, "model.cpp", "create",  "   Error creating model: %s", e.what()) ;
     }
@@ -214,25 +202,23 @@ bool Model::save(){
 
 bool Model::initialize(){
 
+    int64 startTask = getTick();
+    int64 startSubtask;
+
     try{
+        Log(log_Error, "model.cpp", "initialize", "   Initializing modules...");
+
         //TODO: 1) ALL THE 'initialize functions' from OPENCV changed from version 2.x to 3.x.  CHECK THIS CAREFULLY
         //TODO: 2) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
 
-        Log(log_Error, "model.cpp", "initialize", "      Setting dictionary size to 1500...");
         dictionarySize = 1500;
-        Log(log_Error, "model.cpp", "initialize", "         Done.");
+        Log(log_Error, "model.cpp", "initialize", "      Dictionary size is %i.", dictionarySize);
 
-        Log(log_Error, "model.cpp", "initialize", "      Redefining original training data mat type as CV_32S (currentlly it is type %s)...", getMatType(trainingData).c_str());
-        //This mat contains each features vector as a row. The number of rows is the number of training samples and the number of columns is the size of one features vector
-        //originally: Mat trainingData(0, dictionarySize, CV_32FC1);
         trainingData  = Mat(0, dictionarySize, CV_32S);
-        Log(log_Error, "model.cpp", "initialize", "         Done. TrainingData mat is now type '%s'. ",  getMatType(trainingData).c_str());
+        Log(log_Error, "model.cpp", "initialize", "      TrainingData mat is type '%s'. ",  getMatType(trainingData).c_str());
 
-        Log(log_Error, "model.cpp", "initialize", "      Redefining original training label mat type as CV_32S(currentlly it is type %s)...", getMatType(trainingLabel).c_str());
-        //This mat contains labels for each training feature. In KNN it is a Nx1 matrix, where N is the number of training samples. The value of each row is the truth label of the corresponding sample. The type of this mat should be CV_32S
-        //originally: Mat trainingLabel(0, 1, CV_32FC1)
         trainingLabel = Mat(0, 1, CV_32S);
-        Log(log_Error, "model.cpp", "initialize", "         Done. TrainingLabel mat is now type '%s'.", getMatType(trainingLabel).c_str());
+        Log(log_Error, "model.cpp", "initialize", "      TrainingLabel mat is type '%s'.", getMatType(trainingLabel).c_str());
 
         Log(log_Error, "model.cpp", "initialize", "      Initializing detector module: '" + getFeatureName() + "'...");
         switch (featureType)
@@ -255,7 +241,7 @@ bool Model::initialize(){
             case feature_HARRIS:
             case feature_DENSE:
             case feature_BLOB:
-                Log(log_Error, "model.cpp", "initialize", "         FEATURE '" + getFeatureName() + "' NOT IMPLEMENTED.");
+                Log(log_Error, "model.cpp", "initialize", "         ERROR: FEATURE '" + getFeatureName() + "' NOT IMPLEMENTED.");
                 return false;
         }
 
@@ -271,7 +257,7 @@ bool Model::initialize(){
             case matcher_K_MEANS_CLUSTERING:
             case matcher_BRUTE_FORCE:
                 //matcher = new BFMatcher::create("BruteForce");
-                Log(log_Error, "model.cpp", "initialize", "         MATCHER '" + getMatcherName() + "' NOT IMPLEMENTED.");
+                Log(log_Error, "model.cpp", "initialize", "         ERROR: MATCHER '" + getMatcherName() + "' NOT IMPLEMENTED.");
                 return false;
         }
 
@@ -284,27 +270,39 @@ bool Model::initialize(){
                 break;
             }
             case model_PROJECTION:{
-                Log(log_Error, "model.cpp", "initialize", "         TRAINER '" + getModelName() + "' NOT IMPLEMENTED.");
+                Log(log_Error, "model.cpp", "initialize", "         ERROR: TRAINER '" + getModelName() + "' NOT IMPLEMENTED.");
                 return false;
             }
 
         }
 
-        Log(log_Error, "model.cpp", "initialize", "      Creating SVM (Suport Vector Machine)...");
+        startTask = getTick();
+        Log(log_Error, "model.cpp", "initialize", "      Creating SVM (Support Vector Machine)...");
         svm = SVM::create();
         Log(log_Error, "model.cpp", "initialize", "         Done.");
 
         Log(log_Error, "model.cpp", "initialize", "      Configuring SVM params...");
+
         svm->setKernel(SVM::RBF);
+        Log(log_Error, "model.cpp", "initialize", "         Kernel: RBF");
+
         svm->setType(SVM::C_SVC);
+        Log(log_Error, "model.cpp", "initialize", "         Type: SVC");
+
         svm->setGamma(0.50625000000000009);
+        Log(log_Error, "model.cpp", "initialize", "         Gamma: 0.50625000000000009");
+
         svm->setC(312.50000000000000);
+        Log(log_Error, "model.cpp", "initialize", "         C: 312.5");
+
         svm->setTermCriteria(TermCriteria(CV_TERMCRIT_ITER, 100, 0.000001));
         Log(log_Error, "model.cpp", "initialize", "         Done.");
+
+        Log(log_Error, "model.cpp", "initialize", "      Done. Initialization took %s seconds.",  getDifString(startTask).c_str());
         return true;
 
     }catch(const std::exception& e){
-        Log(log_Error, "model.cpp", "initialize",  "   Error creating model: %s", e.what()) ;
+        Log(log_Error, "model.cpp", "initialize",  "      Error creating model: %s", e.what()) ;
     }
 
 }
@@ -317,51 +315,52 @@ bool Model::createDictionary() {
     vector<KeyPoint> keypoints;
     Mat descriptors;
 
-    startSubtask= getTick();
+    try{
+        Log(log_Debug, "model.cpp", "createDictionary", "      Creating a new dictionary based on the %i samples found...", samples.size());
+        startSubtask= getTick();
 
-    Log(log_Debug, "model.cpp", "createDictionary", "      Creating a new dictionary based on the %i samples found...", samples.size());
-    for (int i = 0; i < samples.size(); i++) {
+        for (int i = 0; i < samples.size(); i++) {
 
-        Log(log_Debug, "model.cpp", "createDictionary", "         Processing sample %05d...", (i+1));
-
-        Mat m = samples[i].grayMat;
-
-        //Check if the original mat exists
-        if (isMatValid(m)) {
+            Log(log_Debug, "model.cpp", "createDictionary", "         Processing sample %05d...", (i+1));
 
             Log(log_Detail, "model.cpp", "createDictionary", "            Extracting features...");
-            detector->detect(m, keypoints);
-
-            //Get the descriptors for each keypoint
-            Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features...");
-            extractor->compute(m, keypoints, descriptors);
-
-            //Adds the descriptor to the trainer
-            Log(log_Detail, "model.cpp", "createDictionary", "            Saving descriptors...");
-            trainer->add(descriptors);
+            detector->detect(samples[i].workMat, keypoints);
+            if(keypoints.size() > 0){
+                Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features...");
+                extractor->compute(samples[i].workMat, keypoints, descriptors);
+                if (descriptors.cols > 0){
+                    Log(log_Detail, "model.cpp", "createDictionary", "            Saving descriptors...");
+                    trainer->add(descriptors);
+                }else
+                    Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No descriptors were found on sample %i ('%s'), even though %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
+            }else
+                Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
 
         }
-    }
-    Log(log_Debug, "model.cpp", "createDictionary", "         Done. Processing all %i samples took %s seconds.", samples.size(), getDifString(startSubtask).c_str());
+        Log(log_Debug, "model.cpp", "createDictionary", "         Done. Processing all %i samples took %s seconds.", samples.size(), getDifString(startSubtask).c_str());
 
-    //Did processing the samples find anything usefull?
-    if (trainer->descriptorsCount() > 0){
+        //Did processing the samples find anything usefull?
+        if (trainer->descriptorsCount() > 0){
 
-        Log(log_Debug, "model.cpp", "createDictionary", "      Clustering (choosing centroids as words) features out of all %i descriptors found...", trainer->descriptorsCount());
-        startSubtask = getTick();
+            Log(log_Debug, "model.cpp", "createDictionary", "      Clustering (choosing centroids as words) features out of all %i descriptors found...", trainer->descriptorsCount());
+            startSubtask = getTick();
 
-        //Cluster (use the centroid of each cluster as the words of the dictionary)
-        dictionary = trainer->cluster();
+            //Cluster (use the centroid of each cluster as the words of the dictionary)
+            dictionary = trainer->cluster();
 
-        Log(log_Debug, "model.cpp", "createDictionary", "         Done. Clustering took %s seconds.", getDifString(startSubtask).c_str());
+            Log(log_Debug, "model.cpp", "createDictionary", "         Done. Clustering took %s seconds.", getDifString(startSubtask).c_str());
 
-        if(dictionary.dims > 0){
-            Log(log_Debug, "model.cpp", "createDictionary", "      Done. Creating dictionary took %s seconds.", getDifString(startTask).c_str());
-            return true;
+            if(dictionary.dims > 0){
+                Log(log_Debug, "model.cpp", "createDictionary", "      Done. Creating dictionary took %s seconds.", getDifString(startTask).c_str());
+                return true;
+            }else
+                Log(log_Debug, "model.cpp", "createDictionary", "      ERROR: Cluster failed to create a dictionary!");
         }else
-            Log(log_Debug, "model.cpp", "createDictionary", "      ERROR: Cluster failed to create a dictionary!");
-    }else
-        Log(log_Error, "model.cpp", "createDictionary", "         ERROR: Failed to cluster because no descriptors were found!");
+            Log(log_Error, "model.cpp", "createDictionary", "       ERROR: Failed to cluster because no descriptors were found!");
+
+    }catch(const std::exception& e){
+        Log(log_Error, "model.cpp", "createDictionary",  "      Error creating dictionary: %s", e.what()) ;
+    }
 
     return false;
 
@@ -372,84 +371,151 @@ bool Model::prepareTrainingSet() {
     int64 startTask = getTick();
     int64 startSubtask;
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Preparing training set (using all %i samples)...", samples.size());
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "   Preparing training set (using all %i samples)...", samples.size());
 
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Creating bag of words extractor...");
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Creating bag of words extractor...");
     BOWImgDescriptorExtractor bow(extractor, matcher);
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done.");
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
 
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Setting vocabulary...");
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Setting vocabulary...");
     bow.setVocabulary(dictionary);
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done.");
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
 
-
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Preparing data (trainingData mat is '%s')...", getMatType(trainingData).c_str());
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Preparing data (trainingData mat is '%s')...", getMatType(trainingData).c_str());
     startSubtask = getTick();
     for (int i = 0; i < samples.size(); i++) {
 
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Preparing sample %05d...", (i + 1));
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Preparing sample %05d...", (i + 1));
 
         vector<KeyPoint> keypoints;
         Mat descriptors;
 
-        //TODO SOMETHING HERE FAILS AND FORCES AN ITEM OUT OF THE TRAINING MAT.   CHECK THIS LATER
-        //ja falha no sample 38  (que nao é adicionado)
-        //Get the keypoints
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Extracting features (key points)...");
+        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Extracting features (key points)...");
         detector->detect(samples[i].binaryMat, keypoints);
-        if(keypoints.size() > 0) {
-
-            Log(log_Detail, "model.cpp", "prepareTrainingSet",  "               Computing descriptors from features (key points)...");
+        if(keypoints.size() > 0){
+            Log(log_Detail, "model.cpp", "prepareTrainingSet",  "            Computing descriptors from features (key points)...");
             bow.compute(samples[i].binaryMat, keypoints, descriptors);
-            if (descriptors.cols >= 0){
-                //Adds the descriptor to the trainning array
-                Log(log_Debug, "model.cpp", "prepareTrainingSet", "               Adding %i descriptors to trainingData mat (that has '%i' items so far)...", descriptors.size(), trainingData.rows);
+            if (descriptors.cols > 0){
+                Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding %i descriptors to trainingData mat (that has '%i' items so far)...", descriptors.cols, trainingData.rows);
                 trainingData.push_back(descriptors);
-            }else{
-                Log(log_Error, "model.cpp", "prepareTrainingSet", "               No descriptors were found on sample %i ('%s'), eventhough %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
-            }
-        }else{
-            Log(log_Error, "model.cpp", "prepareTrainingSet", "               No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
-        }
+            }else
+                Log(log_Error, "model.cpp", "prepareTrainingSet", "            Failed: No descriptors were found on sample %i ('%s'), eventhough %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
+        }else
+            Log(log_Error, "model.cpp", "prepareTrainingSet", "            Failed: No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
 
     }
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing data from all %i samples took %s seconds (trainingData mat is '%s')", samples.size() , getDifString(startSubtask).c_str(), getMatType(trainingData).c_str() );
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done. Preparing data from all %i samples took %s seconds (trainingData mat is '%s')", samples.size() , getDifString(startSubtask).c_str(), getMatType(trainingData).c_str() );
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Checking labels (labels is a vector<string> of size %i)...", labels.size());
-    startSubtask = getTick();
-    for (int i = 0; i < samples.size(); i++) {
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Checking sample %05d: Label is '%s'...", (i + 1), samples[i].label.c_str());
-
-        //Check if the label was already added to the label array
-        if (find(labels.begin(), labels.end(), samples[i].label) == labels.end()){
-            labels.push_back(samples[i].label.c_str());
-            Log(log_Debug, "model.cpp", "prepareTrainingSet", "               Label '%s' (from sample %05d) was add at the lastest position of the labels array ('%i').", samples[i].label.c_str(), (i + 1), labels.size());
-        }
-    }
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Done. Checking all %i labels took '%s' and created an %i unique labels vector...", samples.size(),  getDifString(startSubtask).c_str(), labels.size());
-
-
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Preparing label mat (trainingLabel mat is '%s')...", getMatType(trainingLabel).c_str());
+    Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Preparing label mat (trainingLabel mat is '%s')...", getMatType(trainingLabel).c_str());
     startSubtask = getTick();
     for (int i = 0; i < samples.size(); i++) {
 
-        //TODO:  There was a bug here (getting the vector<string> index, so I changed to the for loop below until I found out what is wrong with the linux FIND function
-        //float index = distance(labels.begin(), find(labels.begin(), labels.end(), samples[i].label));
-        //float index = find(labels.begin(), labels.end(), samples[i].label) - labels.end();
-
-        for (int k = 0; k < labels.size(); k++){
-            if(labels[k] == samples[i].label){
-                Log(log_Debug, "model.cpp", "prepareTrainingSet", "            Label index of sample %05d ('%s') is %i...", (i + 1), labels[k].c_str(), k );
+        for (int k = 0; k < sampleClass.size(); k++){
+            if(sampleClass[k].label == samples[i].label){
+                Log(log_Debug, "model.cpp", "prepareTrainingSet",  "         Sample %05d is from class '%s'. Label is %i.", (i + 1), sampleClass[k].label.c_str(), k );
                 trainingLabel.push_back(k);
                 break;
             }
         }
-
     }
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "            Done. Preparing the trainingLabel from all %i samples took %s seconds (trainingLabel mat is '%s')", samples.size(), getDifString(startSubtask).c_str(), getMatType(trainingLabel).c_str() );
+    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Done. Preparing training set took %s seconds.",  getDifString(startTask).c_str());
-    return isMatValid(trainingData);
+    if(isMatValid(trainingData)){
+        if(trainingData.rows == trainingLabel.rows) {
+            Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Done. Preparing training set took %s seconds.", getDifString(startTask).c_str());
+            return true;
+        }else{
+            Log(log_Error, "model.cpp", "prepareTrainingSet", "      Failed to prepare training set. TrainingData has %i cols and TrainingLabels has %i!", trainingData.rows, trainingLabel.rows );
+        }
+
+    }else{
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "      Failed to create trainingData after %s seconds.", getDifString(startTask).c_str());
+    }
+
+    return false;
+
+}
+
+bool Model::preProcessSamples() {
+
+    int64 startTask = getTick();
+    int64 startSubtask;
+    int i;
+    int classWidth = averageDimension;
+    int classHeight = averageDimension;
+
+    try{
+        Log(log_Debug, "model.cpp", "preProcessSamples", "      Pre-processing all %i samples...", samples.size());
+
+        for (i = 0; i < samples.size(); i++) {
+
+            Log(log_Debug, "model.cpp", "preProcessSamples", "         Pre-processing sample %05d...", (i+1));
+
+            //for (int k = 0; k < sampleClass.size(); k++) {
+            //    if((sampleClass[k].label == samples[i].label) ){
+            //        classWidth = sampleClass[i].width / sampleClass[i].count;
+            //        classHeight = sampleClass[i].height / sampleClass[i].count;
+            //        break;
+            //    }
+            //}
+            //Log(log_Debug, "model.cpp", "preProcessSamples", "         Sample %i will be resized from W:%i x H:%i to W:%i x H:%i...", (i + 1) , samples[i].originalMat.cols, samples[i].originalMat.rows, classWidth, classHeight);
+
+            //Creates the working Mat keeping the recomended class size
+            if (!samples[i].createWorkMat(classWidth, classHeight))
+                break;
+
+            //Creates grayscale mat of the sample
+            if (!samples[i].createGrayscaleMat())
+                break;
+
+            //Creates monochromatic mat of the grayscale sample
+            if (!samples[i].createBinaryMat(binarizationMethod))
+                break;
+
+            //Creates XYCut images
+            if (!samples[i].createXYCutMat())
+                break;
+
+            if (saveIntermediateFiles)
+                samples[i].saveIntermediate(folder, false, true, false, false, false);
+
+        }
+        Log(log_Debug, "model.cpp", "preProcessSamples", "         Done. Pre-processing all %i samples took %s seconds.", samples.size(), getDifString(startTask).c_str());
+
+        return (i >= samples.size());
+
+    }catch(const std::exception& e){
+        Log(log_Error, "model.cpp", "preProcessSamples",  "      Error creating model: %s", e.what()) ;
+    }
+
+    return false;
+}
+
+void Model::updateClass(Sample s){
+
+    int i;
+
+    Log(log_Detail, "model.cpp", "updateClass", "         Updating class statistics...");
+    for (i = 0; i < sampleClass.size(); i++) {
+        if(sampleClass[i].label == s.label)
+           break;
+    }
+
+    if (i >= sampleClass.size()){
+        Log(log_Detail, "model.cpp", "updateClass", "         This is a new class ('%s')...", s.label.c_str());
+        Class c;
+        c.label = s.label;
+        c.count = 0;
+        c.width = 0;
+        c.height = 0;
+        sampleClass.push_back(c);
+    }
+
+    sampleClass[i].count++;
+    sampleClass[i].width = sampleClass[i].width + s.originalMat.cols;
+    sampleClass[i].height = sampleClass[i].height + s.originalMat.rows;
+
+    Log(log_Detail, "model.cpp", "updateClass", "            Done. Class statistics were updated.");
 
 }
 
@@ -491,8 +557,8 @@ bool Model::classify(string path){
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDifString(startSubtask).c_str());
 
     if (response >= 0){
-       Log(log_Debug, "model.cpp", "classify", "      Predict returned " + labels[response] + " (" + to_string(response) + ")!");
-       sRet = labels[response];
+       //Log(log_Debug, "model.cpp", "classify", "      Predict returned " + sampleClass[response].label + " (" + to_string(response) + ")!");
+       //sRet = sampleClass[response];
     }
     else{
        Log(log_Debug, "model.cpp", "classify", "      Predict returned UNKNOWN!");
