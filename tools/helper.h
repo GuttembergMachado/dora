@@ -44,10 +44,11 @@ string replace(string str, string from, string to);
 
 int64 getTick();
 double getDiff(int64 startTick);
-string getDifString(int64 startTick);
+string getDiffString(int64 startTick);
 
 string getCurrentTimeStamp();
 
 bool isMatValid(Mat m);
+string getMatType(Mat m);
 
 #endif

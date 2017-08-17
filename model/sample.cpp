@@ -3,49 +3,130 @@
 //
 #include "sample.h"
 
-bool fixJPEGError = false;
+Sample::Sample(){
 
-bool Sample::load(string sampleFilename) {
+    //Initialize the internal variables
+    mLabel="";
+    mFilename="";
+    mType="";
+    mSize=0;
+    mWidth=0;
+    mHeight=0;
+    mDepth=0;
+
+};
+
+bool Sample::load(string filename, string label, bool fixBrokenJPG) {
 
     try {
-        Log(log_Detail, "sample.cpp", "load", "      Loading file '%s'...", sampleFilename.c_str());
+        Log(log_Detail, "sample.cpp", "load", "      Loading file '%s'...", filename.c_str());
 
-        filename = sampleFilename;
+        mFilename = filename;
+        mLabel = label;
 
         //Loads an unchanged mat from the image file
-        originalMat = imread(filename, CV_LOAD_IMAGE_UNCHANGED);
+        mOriginalMat = imread(mFilename, CV_LOAD_IMAGE_UNCHANGED);
 
         //Do we have a mat?
-        if(isMatValid(originalMat)){
+        if (isMatValid(mOriginalMat)) {
 
-            //Some of the pre-processing I did while I was manually classifing the first trainning set end up
-            //corrupting some of the jpgs (probably due to ignoring the end bytes of the file). Such corrputed
-            //files were causing opencv's imread functino to output an error ("Premature end of JPEG file"),
-            //but would load the image anyway.
-            //By saving the file using opencv's imwrite function we garantee it's properly written to disk
-            if (fixJPEGError && isMatValid(originalMat)){
-                Log(log_Detail, "sample.cpp", "load",  "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
+            if (fixBrokenJPG) {
+                Log(log_Detail, "sample.cpp", "load", "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
                 save();
             }
 
             //Stores some sample information to speed up debugging when I need to...
-            type = filename.substr(filename.find_last_of(".") + 1);
-            size = fileSize(filename);
-            width = originalMat.cols;
-            height = originalMat.rows;
-            depth = originalMat.dims;
+            mType = filename.substr(mFilename.find_last_of(".") + 1);
+            mSize = fileSize(mFilename);
+            mWidth = mOriginalMat.cols;
+            mHeight = mOriginalMat.rows;
+            mDepth = mOriginalMat.dims;
 
             Log(log_Detail, "sample.cpp", "load", "      File loaded.");
             return true;
+
+        } else {
+            Log(log_Error, "sample.cpp", "load", "      File was loaded but image mat is invalid!");
         }
 
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "load",  "         Failed to load file: %s", e.what() ) ;
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "load", "         Failed to load file: %s", e.what());
     }
 
-    Log(log_Error, "sample.cpp", "load", "      Loading file failed!");
     return false;
+
 }
+
+string Sample::getLabel(){
+    return mLabel;
+}
+
+string Sample::getFilename(){
+    return mFilename;
+}
+
+string Sample::getType(){
+    return mType;
+}
+
+int Sample::getSize(){
+    return mSize;
+}
+
+int Sample::getWidth(){
+    return mWidth;
+}
+
+int Sample::getHeight(){
+    return mHeight;
+}
+
+int Sample::getDepth(){
+    return mDepth;
+}
+
+
+
+
+/*
+bool Sample::preProcess(){
+
+    //Creates the working Mat keeping the recomended class size
+    if (!samples[i].createWorkMat(classWidth, classHeight))
+        break;
+
+    //Creates grayscale mat of the sample
+    if (!samples[i].createGrayscaleMat())
+        break;
+
+    //Creates monochromatic mat of the grayscale sample
+    if (!samples[i].createBinaryMat(binarizationMethod))
+        break;
+
+    //Creates XYCut images
+    if (!samples[i].createXYCutMat())
+        break;
+
+}
+
+bool Sample::extractFeatures(){
+
+    Log(log_Detail, "model.cpp", "createDictionary", "            Extracting features...");
+    detector->detect(samples[i].binaryMat, keypoints);
+    if(keypoints.size() > 0){
+        Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features...");
+        extractor->compute(samples[i].binaryMat, keypoints, descriptors);
+        if (descriptors.cols > 0){
+            Log(log_Detail, "model.cpp", "createDictionary", "            Saving descriptors...");
+            trainer->add(descriptors);
+        }else
+            Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No descriptors were found on sample %i ('%s'), even though %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
+    }else
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
+
+
+}
+
 
 bool Sample::createWorkMat(int width, int height){
 
@@ -156,28 +237,6 @@ bool Sample::createXYCutMat(){
     return false;
 }
 
-bool Sample::save(){
-
-    try{
-        Log(log_Debug, "sample.cpp", "save", "      Saving original mat...");
-
-        if(isMatValid(originalMat)) {
-
-            //saves mat to file
-            //imwrite(filename, originalMat);
-
-            Log(log_Debug, "sample.cpp", "save", "         Done saving original mat...");
-            return true;
-
-        }
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "save",  "         Failed to save original mat: %s", e.what() ) ;
-    }
-
-    Log(log_Warning, "sample.cpp", "create_binary", "      Saving original mat failed.");
-    return false;
-}
 
 void Sample::saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut){
 
@@ -249,3 +308,27 @@ void Sample::dump(){
 
 }
 
+*/
+
+bool Sample::save(){
+
+    try{
+        Log(log_Debug, "sample.cpp", "save", "      Saving original mat as '%s'...", mFilename.c_str());
+
+        if(isMatValid(mOriginalMat)) {
+
+            //saves mat to file
+            imwrite(mFilename, mOriginalMat);
+
+            Log(log_Debug, "sample.cpp", "save", "         Done.");
+            return true;
+
+        }else
+            Log(log_Error, "sample.cpp", "create_binary", "      Original mat is invalid.");
+
+    }catch(const std::exception& e){
+        Log(log_Error, "sample.cpp", "save",  "      Failed to save original mat: %s", e.what() ) ;
+    }
+
+    return false;
+}

@@ -20,7 +20,7 @@ set(SOURCE_FILES
         tools/binarization.cpp
         tools/binarization.h
         tools/xycut.cpp
-        tools/xycut.h)
+        tools/xycut.h model/class.cpp model/class.h)
 
 add_executable(dora ${SOURCE_FILES})
 

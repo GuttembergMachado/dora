@@ -16,31 +16,48 @@ using namespace std;
 using namespace cv;
 
 class Sample{
+    string  mLabel;
+    string  mFilename;
+    //string  mType;
+    //int     mSize;
+    //int     mWidth;
+    //int     mHeight;
+    //int     mDepth;
+    Mat     mOriginalMat;
 
 public:
-    string label;
-    string filename;
-    string type;
-    int size;
-    int width;
-    int height;
-    int depth;
-    Mat originalMat;
-    Mat workMat;
-    Mat grayMat;
-    Mat binaryMat;
-    Mat xCutMat;
-    Mat yCutMat;
-    Mat XYCutMat;
-    bool load(string filename);
-    bool createWorkMat(int width, int height);
-    bool createGrayscaleMat();
-    bool createBinaryMat(enumBinarization binMethod);
-    bool createXYCutMat();
-    bool save();
-    void saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut);
-    void dump();
-};
+    //Constructors
+    Sample();
 
+    //Method
+    bool load(string filename, string label, bool fixBrokenJPG);
+    bool save();
+
+    //Getters
+    string getFilename();
+    string getLabel();
+    int getWidth();
+    int getHeight();
+
+    //string getType();
+    //int getSize();
+    //int getDepth();
+    //Public variables:
+    //bool preProcess();
+    //bool extractFeatures();
+    //Mat workMat;
+    //Mat grayMat;
+    //Mat binaryMat;
+    //Mat xCutMat;
+    //Mat yCutMat;
+    //Mat XYCutMat;
+    //bool createWorkMat(int width, int height);
+    //bool createGrayscaleMat();
+    //bool createBinaryMat(enumBinarization binMethod);
+    //bool createXYCutMat();
+    //void saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut);
+    //void dump();
+
+};
 
 #endif

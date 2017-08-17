@@ -263,6 +263,19 @@ bool isMatValid(Mat m){
     return bRet;
 }
 
+string getMatType(Mat m){
+	switch (m.type()){
+		case CV_8U:   return "CV_8U";
+		case CV_8S:   return "CV_8S";
+		case CV_16U:  return "CV_16U";
+		case CV_16S:  return "CV_16S";
+		case CV_32S:  return "CV_32S";
+		case CV_32F:  return "CV_32F";
+		case CV_64F:  return "CV_64F";
+		default:      return "UNKNOWN";
+	}
+}
+
 //---------------------------------------------------------------------------------------------------------------------------
 int64 getTick(){
 	return getTickCount();
@@ -270,7 +283,7 @@ int64 getTick(){
 double getDiff(int64 startTick){
 	return (double) (getTick() - startTick) / getTickFrequency();
 }
-string getDifString(int64 startTick){
+string getDiffString(int64 startTick){
 
 	double d = getDiff(startTick);
 	string s(16, '\0');

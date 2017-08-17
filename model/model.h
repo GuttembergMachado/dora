@@ -11,19 +11,20 @@
 
 #include "../tools/helper.h"
 #include "sample.h"
+#include "class.h"
 
 using namespace std;
 using namespace cv;
 using namespace xfeatures2d;
 using namespace ml;
 
-enum enumModels
+enum enumClassifier
 {
 	model_PROJECTION = 0,
 	model_BAG_OF_FEATURES = 1,
 };
 
-enum enumFeatures
+enum enumFeature
 {
 	feature_SIFT = 0,
 	feature_SURF = 1,
@@ -39,59 +40,75 @@ enum enumFeatures
     feature_BLOB = 11,
 };
 
-enum enumMatchers
+enum enumMatcher
 {
 	matcher_BRUTE_FORCE = 0,
 	matcher_FLANN = 1,
 	matcher_K_MEANS_CLUSTERING = 2,
 };
 
-class Class{
-public:
-	string label;
-	int count;
-	int width;
-	int height;;
-};
 
 class Model {
-    vector<Sample>	            samples;
+
+    //methods
+    bool                        loadSamples(string sampleFolder);
+    bool 						preProcessSamples();
 	bool             			createDictionary();
 	bool 						prepareTrainingSet();
-    bool 						preProcessSamples();
+
     Ptr<FeatureDetector>        detector;
     Ptr<DescriptorExtractor>    extractor;
     Ptr<BOWTrainer>	            trainer;
     Ptr<DescriptorMatcher>      matcher;
     Ptr<SVM>                    svm;
-	Mat							dictionary;
-    int					        dictionarySize = 1500;
-	int 						minDimension = 70;
-	int 						maxDimension = 720;
-	int 						averageDimension = 200;
-	Mat							trainingData;
-	Mat							trainingLabel;
-    string                      getMatType(Mat m);
-	void 						updateClass(Sample s);
+    Mat							mDictionary;
+    Mat							mTrainingData;
+    Mat							mTrainingLabel;
+
+    //logging helper routines
+    string                      getClassifierName();
+    string                      getFeatureName();
+    string                      getMatcherName();
+    string                      getBinarizationName();
+
+    //properties
+    vector<Class>               mClasses;
+    string                      mFilename;
+    int					        mDictionarySize = 1000;
+    int 						mMinDimension = 70;
+    int 						mMaxDimension = 720;
+    enumFeature                 mFeatureType;
+    enumMatcher                 mMatcherType;
+    enumClassifier              mClassifierType;
+    enumBinarization            mBinarizationType;
+    long                        mAverageSampleWidth = 0;
+    long                        mAverageSampleHeight = 0;
+    bool                        mSaveTempFiles = true;
+
 public:
-	enumModels       classificationModel;
-	enumFeatures     featureType;
-    enumMatchers     matcherModel;
-    enumBinarization binarizationMethod;
-    string           getModelName();
-    string           getFeatureName();
-    string           getMatcherName();
-    string           getBinarizationName();
-	string 			 name;
-	string 			 filename;
-	string 			 folder;
-	bool			 saveIntermediateFiles;
-	bool             create(string sampleFolder);
-	bool             load();
-	bool             save();
-	bool             initialize();
-    bool             classify(string path);
-	vector<Class>	 sampleClass;
+
+    //methods
+    bool             initialize();
+    bool             create(string sampleFolder);
+    bool             load();
+    bool             save();
+
+    //setters
+    void             setClassifierType(enumClassifier type);
+    void             setFeatureType(enumFeature type);
+    void             setMatcherType(enumMatcher type);
+    void             setBinarizationType(enumBinarization type);
+    void             setFilename(string filename);
+
+    //getters
+    string           getFilename();
+
+	//string 		   name;
+	//string 		   folder;
+	//bool			   saveIntermediateFiles;
+	//bool             create(string sampleFolder);
+    //bool             classify(string path);
+
 };
 
 #endif

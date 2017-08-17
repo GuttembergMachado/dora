@@ -28,28 +28,16 @@ int main(int argc, char **argv){
         string model = argv[3];
 
         //Set the basic parameters of the model
-        mod.classificationModel = model_BAG_OF_FEATURES;
-        mod.featureType  = feature_SIFT;
-        mod.matcherModel = matcher_FLANN;
-        mod.binarizationMethod = binarization_BRADLEY;
-        mod.name = getFileName(model);
-        mod.filename = model;
-        mod.folder = getFolderName(model);
-        mod.saveIntermediateFiles = true;
+        mod.setClassifierType(model_BAG_OF_FEATURES);
+        mod.setFeatureType(feature_SIFT);
+        mod.setMatcherType(matcher_FLANN);
+        mod.setBinarizationType(binarization_BRADLEY);
+        mod.setFilename(model);
 
         //Is it the modeler  mode?
         if (mode == "-m" || mode == "-M"){
 
             Log(log_Debug, "main.cpp", "main", "Entering MODELLER mode:");
-            Log(log_Debug, "main.cpp", "main", "   Sample folder: '%s'", inputPath.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.filename.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model name: '%s'", mod.name.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Temporary folder: '%s'", mod.folder.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model: '%s'",  mod.getModelName().c_str());
-            Log(log_Debug, "main.cpp", "main", "   Features: '%s'", mod.getFeatureName().c_str());
-            Log(log_Debug, "main.cpp", "main", "   Matching: '%s'", mod.getMatcherName().c_str());
-            Log(log_Debug, "main.cpp", "main", "   Binarization: '%s'", mod.getBinarizationName().c_str());
-            Log(log_Debug, "main.cpp", "main", "   ");
 
             if(mod.initialize()){
 
@@ -67,8 +55,7 @@ int main(int argc, char **argv){
 
             Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
             Log(log_Debug, "main.cpp", "main", "   Input file or folder: '%s'", inputPath.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.filename.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model name: '%s'", mod.name.c_str());
+            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.getFilename().c_str());
             Log(log_Debug, "main.cpp", "main", "   ");
 
             vector<string> files;
