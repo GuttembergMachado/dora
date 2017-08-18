@@ -8,35 +8,47 @@ Class::Class(string label) {
     //Initialize internal variables
     mLabel = label;
     samples.clear();
+    mAverageSampleWidth;
+    mAverageSampleHeight;
+
 }
 
 string Class::getLabel() {
     return mLabel;
 }
 
-long Class::getAverageSampleWidth() {
+void Class::calculateAverageSampleWidth(){
 
-    if(samples.size() == 0)
-        return 0;
+    if(samples.size() > 0){
 
-    int sum = 0;
-    for (int i = 0; i < samples.size(); i++) {
-        sum = sum + samples[i].getWidth();
+        int sum = 0;
+        for (int i = 0; i < samples.size(); i++) {
+            sum = sum + samples[i].originalMat.cols;
+        }
+
+        mAverageSampleWidth =  sum / (int) samples.size();
     }
-
-    return sum / samples.size();
 
 }
 
-long Class::getAverageSampleHeight(){
+void Class::calculateAverageSampleHeight(){
 
-    if(samples.size() == 0)
-        return 0;
+    if(samples.size() > 0){
 
-    int sum = 0;
-    for (int i = 0; i < samples.size(); i++) {
-        sum = sum + samples[i].getHeight();
+        int sum = 0;
+        for (int i = 0; i < samples.size(); i++) {
+            sum = sum + samples[i].originalMat.rows;
+        }
+
+        mAverageSampleWidth = sum / (int) samples.size();
     }
 
-    return sum / samples.size();
+}
+
+int Class::getAverageSampleWidth() {
+    return mAverageSampleWidth;
+}
+
+int Class::getAverageSampleHeight(){
+    return mAverageSampleHeight;
 }

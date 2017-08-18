@@ -9,8 +9,14 @@ using namespace std;
 
 int main(int argc, char **argv){
 
-    //#include <tesseract/baseapi.h>
-    //tesseract::TessBaseAPI ocr;
+    //TODO:  1) Play with com o Tesseract:
+    //          #include <tesseract/baseapi.h>
+    //          tesseract::TessBaseAPI ocr;
+    //TODO:  2) Finish porting Flan, SIFT , BOW
+    //TODO:  3) Finish porting classifier mode
+    //TODO:  4) Check all the initialization procedure. Most of the opencv2.x functions are used differently on opencv 3.x
+    //TODO:  5) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
+    //DONE:  6) Include average sample sizes per class and over all sampels;
 
     Model mod;
 
@@ -18,7 +24,7 @@ int main(int argc, char **argv){
     Log(log_Error, "main.cpp", "main", "DORA: Document Analysis and Recognition");
     Log(log_Error, "main.cpp", "main", "Guttemberg Meirelles Machado - 2015");
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
-    Log(log_Error, "main.cpp", "main", "Displaying %s.", getLogMode().c_str());
+    Log(log_Error, "main.cpp", "main", "Logging and displaying: %s information.", getLogMode().c_str());
 
     //Checks if the number of parameters is right
     if (argc == 4){

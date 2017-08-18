@@ -8,11 +8,6 @@ Sample::Sample(){
     //Initialize the internal variables
     mLabel="";
     mFilename="";
-    mType="";
-    mSize=0;
-    mWidth=0;
-    mHeight=0;
-    mDepth=0;
 
 };
 
@@ -25,22 +20,15 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
         mLabel = label;
 
         //Loads an unchanged mat from the image file
-        mOriginalMat = imread(mFilename, CV_LOAD_IMAGE_UNCHANGED);
+        originalMat = imread(mFilename, CV_LOAD_IMAGE_UNCHANGED);
 
         //Do we have a mat?
-        if (isMatValid(mOriginalMat)) {
+        if (isMatValid(originalMat)) {
 
             if (fixBrokenJPG) {
                 Log(log_Detail, "sample.cpp", "load", "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
-                save();
+                saveMat(originalMat, mFilename);
             }
-
-            //Stores some sample information to speed up debugging when I need to...
-            mType = filename.substr(mFilename.find_last_of(".") + 1);
-            mSize = fileSize(mFilename);
-            mWidth = mOriginalMat.cols;
-            mHeight = mOriginalMat.rows;
-            mDepth = mOriginalMat.dims;
 
             Log(log_Detail, "sample.cpp", "load", "      File loaded.");
             return true;
@@ -65,73 +53,78 @@ string Sample::getFilename(){
     return mFilename;
 }
 
-string Sample::getType(){
-    return mType;
-}
+bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod){
 
-int Sample::getSize(){
-    return mSize;
-}
+    //1) Is sample valid?
+    if (isMatValid(originalMat)){
 
-int Sample::getWidth(){
-    return mWidth;
-}
+        //2) Is the sample larger enough?
+        if (originalMat.cols > minDimension && originalMat.rows > minDimension) {
 
-int Sample::getHeight(){
-    return mHeight;
-}
+            //3) Is the sample too large?
+            if (originalMat.cols < maxDimension && originalMat.rows < maxDimension) {
 
-int Sample::getDepth(){
-    return mDepth;
-}
+                //4) Can we creating a resized working mat?
+                if(createWorkMat(desiredWidth, desiredHeight)){
 
+                    //5) Can we create a grayscale mat from the working mat?
+                    if(createGrayscaleMat()){
 
+                        //6) Can we create a binary mat from the grayscale mat?
+                        if(createBinaryMat(binMethod)){
 
+                            //7) Can we create the XY Cut mats?
+                            if(createXYCutMat()){
 
-/*
-bool Sample::preProcess(){
+                                //Should we save the intermediate files?
+                                saveMat(workMat,   getFolderName(mFilename) + "/temp/gray_" + getFileName(mFilename));
+                                //saveMat(grayMat,   getFolderName(mFilename) + "/temp/gray_" + getFileName(mFilename));
+                                saveMat(binaryMat, getFolderName(mFilename) + "/temp/binary_" + getFileName(mFilename));
+                                //saveMat(XYCutMat,  getFolderName(mFilename) + "/temp/xycut_" + getFileName(mFilename));
 
-    //Creates the working Mat keeping the recomended class size
-    if (!samples[i].createWorkMat(classWidth, classHeight))
-        break;
+                                Log(log_Detail, "sample.cpp", "preProcess", "            Done. Sample was pre-processed successfully.");
+                                return true;
 
-    //Creates grayscale mat of the sample
-    if (!samples[i].createGrayscaleMat())
-        break;
-
-    //Creates monochromatic mat of the grayscale sample
-    if (!samples[i].createBinaryMat(binarizationMethod))
-        break;
-
-    //Creates XYCut images
-    if (!samples[i].createXYCutMat())
-        break;
-
-}
-
-bool Sample::extractFeatures(){
-
-    Log(log_Detail, "model.cpp", "createDictionary", "            Extracting features...");
-    detector->detect(samples[i].binaryMat, keypoints);
-    if(keypoints.size() > 0){
-        Log(log_Detail, "model.cpp", "createDictionary", "            Computing descriptors from features...");
-        extractor->compute(samples[i].binaryMat, keypoints, descriptors);
-        if (descriptors.cols > 0){
-            Log(log_Detail, "model.cpp", "createDictionary", "            Saving descriptors...");
-            trainer->add(descriptors);
+                            }else
+                                Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because xyCut mat is invalid ('%s').", mFilename.c_str());
+                        }else
+                            Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because binary mat is invalid ('%s').", mFilename.c_str());
+                    }else
+                        Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because grayscale mat is invalid ('%s').", mFilename.c_str());
+                }else
+                    Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because working mat is invalid ('%s').", mFilename.c_str());
+            }else
+                Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because onde of its dimension is larger than %i pixels ('%s').", maxDimension, mFilename.c_str());
         }else
-            Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No descriptors were found on sample %i ('%s'), even though %i keypoints were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
+            Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because one of its dimension is smaller than %i pixels ('%s').", minDimension, mFilename.c_str());
     }else
-        Log(log_Error, "model.cpp", "prepareTrainingSet", "               Failed: No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
+        Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because original mat is invalid ('%s').", mFilename.c_str());
 
-
+    return false;
 }
 
+bool Sample::saveMat(Mat inputMat, string filename){
+
+    Log(log_Detail, "sample.cpp", "saveMat", "         Saving mat as '%s'...", filename.c_str());
+
+    if(isMatValid(inputMat)) {
+
+        //saves mat to file
+        imwrite(filename, inputMat);
+
+        Log(log_Detail, "sample.cpp", "saveMat", "            Done.");
+        return true;
+
+    }
+
+    Log(log_Error, "sample.cpp", "saveMat", "            Saving mat failed.");
+    return false;
+}
 
 bool Sample::createWorkMat(int width, int height){
 
     try{
-        Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating a resized (W:%i, H%i) work mat from original mat...", width, height);
+        Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating the work mat...");
 
         if(isMatValid(originalMat)) {
 
@@ -166,169 +159,56 @@ bool Sample::createWorkMat(int width, int height){
 
 bool Sample::createGrayscaleMat(){
 
-    try {
-        Log(log_Detail, "sample.cpp", "createGrayscaleMat", "      Creating grayscale mat from original mat...");
+    Log(log_Detail, "sample.cpp", "createGrayscaleMat", "         Creating grayscale mat...");
 
-        if(isMatValid(workMat)){
+    if(isMatValid(workMat)){
 
-            //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
-            cvtColor(workMat, grayMat, CV_BGR2GRAY);
+        //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
+        cvtColor(workMat, grayMat, CV_BGR2GRAY);
 
-            if(isMatValid(grayMat)){
-                Log(log_Detail, "sample.cpp", "createGrayscaleMat", "      Grayscale mat created.");
-                return true;
-            }
+        if(isMatValid(grayMat)){
+            Log(log_Detail, "sample.cpp", "createGrayscaleMat", "            Done.");
+            return true;
         }
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "createGrayscaleMat",  "         Failed to create mat: %s", e.what() ) ;
     }
 
-    Log(log_Warning, "sample.cpp", "createGrayscaleMat", "      Creating grayscale mat failed.");
+    Log(log_Warning, "sample.cpp", "createGrayscaleMat", "            Creating grayscale mat failed.");
     return false;
 }
 
 bool Sample::createBinaryMat(enumBinarization binMethod){
 
-    try{
-        Log(log_Detail, "sample.cpp", "createBinaryMat", "      Creating binary mat from gray mat...");
+    Log(log_Detail, "sample.cpp", "createBinaryMat", "         Creating binary mat...");
 
-        if(isMatValid(grayMat)) {
+    if(isMatValid(grayMat)) {
 
-            //converts the gray mat to a black and white one
-            binarize(grayMat, binaryMat, binMethod);
+        //converts the gray mat to a black and white one
+        binarize(grayMat, binaryMat, binMethod);
 
-            if(isMatValid(binaryMat)){
-                Log(log_Detail, "sample.cpp", "createBinaryMat", "      Binary mat created.");
-                return true;
-            }
+        if(isMatValid(binaryMat)){
+            Log(log_Detail, "sample.cpp", "createBinaryMat", "            Done.");
+            return true;
         }
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "createBinaryMat",  "         Failed to create mat: %s", e.what() ) ;
     }
 
-    Log(log_Warning, "sample.cpp", "createBinaryMat", "      Creating binary mat failed.");
+    Log(log_Warning, "sample.cpp", "createBinaryMat", "            Creating binary mat failed.");
     return false;
 }
 
 bool Sample::createXYCutMat(){
 
-    try{
-        Log(log_Detail, "sample.cpp", "createXYCutMat", "      Creating XYCut mats from binary mat...");
+    Log(log_Detail, "sample.cpp", "createXYCutMat", "         Creating XYCut mats from binary mat...");
 
-        if(isMatValid(binaryMat)) {
+    if(isMatValid(binaryMat)) {
 
-            if(getXCut(binaryMat, xCutMat));
-                if(getYCut(binaryMat, yCutMat));
-                    if(getXYCut(binaryMat, XYCutMat));
+        getXYCut(binaryMat, XYCutMat);
 
-            if(isMatValid(xCutMat) && isMatValid(yCutMat) && isMatValid(XYCutMat) ){
-                Log(log_Detail, "sample.cpp", "createXYCutMat", "      Done. All 3 XYCut mat were created.");
-                return true;
-            }
-        }
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "createXYCutMat",  "         Failed to create XYCut mats: %s", e.what() ) ;
-    }
-
-    Log(log_Warning, "sample.cpp", "createXYCutMat", "      Creating XYCut mats failed.");
-    return false;
-}
-
-
-void Sample::saveIntermediate(string folder, bool gray, bool binary, bool xCut, bool yCut, bool XYCut){
-
-    try{
-
-        string tempFilename;
-
-        if(gray && isMatValid(grayMat)){
-            tempFilename = folder + "/temp/gray_" + getFileName(filename);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving gray mat as '%s'...", tempFilename.c_str());
-            imwrite(tempFilename, grayMat);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving gray mat.");
-        }
-
-        if(binary && isMatValid(binaryMat)){
-            tempFilename = folder + "/temp/binary_" + getFileName(filename);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving binary mat as '%s'...", tempFilename.c_str());
-            imwrite(tempFilename, binaryMat);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving binary mat.");
-        }
-
-        if(xCut && isMatValid(xCutMat)){
-            tempFilename = folder + "/temp/xcut_" + getFileName(filename);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving xCut mat as '%s'...", tempFilename.c_str());
-            imwrite(tempFilename, xCutMat);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving xCut mat.");
-        }
-
-        if(yCut && isMatValid(yCutMat)){
-            tempFilename = folder + "/temp/ycut_" + getFileName(filename);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving yCut mat as '%s'...", tempFilename.c_str());
-            imwrite(tempFilename, yCutMat);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving gray mat.");
-        }
-
-        if(XYCut && isMatValid(XYCutMat)){
-            tempFilename = folder + "/temp/xycut_" + getFileName(filename);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "      Saving XYCut mat as '%s'...", tempFilename.c_str());
-            imwrite(tempFilename, XYCutMat);
-            Log(log_Detail, "sample.cpp", "saveIntermediate", "         Done saving XYCut mat.");
-        }
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "save",  "         Failed to save files: %s", e.what() ) ;
-    }
-
-}
-
-void Sample::dump(){
-
-    //Faz o dump das imagens
-    Log(log_Detail, "sample.cpp", "dump", "            Filename: %s", filename.c_str());
-    Log(log_Detail, "sample.cpp", "dump", "            Label: %s", label.c_str());
-    Log(log_Detail, "sample.cpp", "dump", "            Type: %s", type.c_str());
-    Log(log_Detail, "sample.cpp", "dump", "            Size: %i", size);
-    Log(log_Detail, "sample.cpp", "dump", "            Width: %i", width);
-    Log(log_Detail, "sample.cpp", "dump", "            Height: %i", height);
-    Log(log_Detail, "sample.cpp", "dump", "            Depth: %i", depth);
-    if(isMatValid(grayMat))
-        Log(log_Detail, "sample.cpp", "dump", "            grayMat: created (%i cols, %i rows, %i channels).", grayMat.rows, grayMat.cols, grayMat.channels());
-    if(isMatValid(binaryMat))
-        Log(log_Detail, "sample.cpp", "dump", "            binaryMat: created (%i cols, %i rows, %i channels).", binaryMat.rows, binaryMat.cols, binaryMat.channels());
-    if(isMatValid(xCutMat))
-        Log(log_Detail, "sample.cpp", "dump", "            xCutMat: created (%i cols, %i rows, %i channels).", xCutMat.rows, xCutMat.cols, xCutMat.channels());
-    if(isMatValid(yCutMat))
-        Log(log_Detail, "sample.cpp", "dump", "            yCutMat: created (%i cols, %i rows, %i channels).", yCutMat.rows, yCutMat.cols, yCutMat.channels());
-    if(isMatValid(XYCutMat))
-        Log(log_Detail, "sample.cpp", "dump", "            XYCut: created (%i cols, %i rows, %i channels).", XYCutMat.rows, XYCutMat.cols, XYCutMat.channels());
-
-}
-
-*/
-
-bool Sample::save(){
-
-    try{
-        Log(log_Debug, "sample.cpp", "save", "      Saving original mat as '%s'...", mFilename.c_str());
-
-        if(isMatValid(mOriginalMat)) {
-
-            //saves mat to file
-            imwrite(mFilename, mOriginalMat);
-
-            Log(log_Debug, "sample.cpp", "save", "         Done.");
+        if(isMatValid(XYCutMat) ){
+            Log(log_Detail, "sample.cpp", "createXYCutMat", "            Done..");
             return true;
-
-        }else
-            Log(log_Error, "sample.cpp", "create_binary", "      Original mat is invalid.");
-
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "save",  "      Failed to save original mat: %s", e.what() ) ;
+        }
     }
 
+    Log(log_Warning, "sample.cpp", "createXYCutMat", "            Creating XYCut mats failed.");
     return false;
 }

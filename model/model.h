@@ -56,9 +56,9 @@ class Model {
 	bool             			createDictionary();
 	bool 						prepareTrainingSet();
 
-    Ptr<FeatureDetector>        detector;
-    Ptr<DescriptorExtractor>    extractor;
-    Ptr<BOWTrainer>	            trainer;
+    Ptr<FeatureDetector>        mFeatureDetector;
+    Ptr<DescriptorExtractor>    mDescriptorExtractor;
+    Ptr<BOWTrainer>	            mTrainer;
     Ptr<DescriptorMatcher>      matcher;
     Ptr<SVM>                    svm;
     Mat							mDictionary;
@@ -83,7 +83,6 @@ class Model {
     enumBinarization            mBinarizationType;
     long                        mAverageSampleWidth = 0;
     long                        mAverageSampleHeight = 0;
-    bool                        mSaveTempFiles = true;
 
 public:
 
@@ -92,6 +91,7 @@ public:
     bool             create(string sampleFolder);
     bool             load();
     bool             save();
+    bool             classify(string path);
 
     //setters
     void             setClassifierType(enumClassifier type);
@@ -102,12 +102,6 @@ public:
 
     //getters
     string           getFilename();
-
-	//string 		   name;
-	//string 		   folder;
-	//bool			   saveIntermediateFiles;
-	//bool             create(string sampleFolder);
-    //bool             classify(string path);
 
 };
 
