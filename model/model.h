@@ -56,14 +56,15 @@ class Model {
 	bool             			createDictionary();
 	bool 						prepareTrainingSet();
 
-    Ptr<FeatureDetector>        mFeatureDetector;
-    Ptr<DescriptorExtractor>    mDescriptorExtractor;
-    Ptr<BOWTrainer>	            mTrainer;
-    Ptr<DescriptorMatcher>      matcher;
-    Ptr<SVM>                    svm;
-    Mat							mDictionary;
-    Mat							mTrainingData;
-    Mat							mTrainingLabel;
+    Ptr<FeatureDetector>            mFeatureDetector;
+    Ptr<DescriptorExtractor>        mDescriptorExtractor;
+    Ptr<BOWTrainer>	                mTrainer;
+    Ptr<DescriptorMatcher>          mDescriptorMatcher;
+    Ptr<SVM>                        svm;
+    Mat							    mDictionary;
+    Mat							    mTrainingData;
+    Mat							    mTrainingLabel;
+    Ptr<BOWImgDescriptorExtractor>  mBOWDescriptorExtractor;
 
     //logging helper routines
     string                      getClassifierName();

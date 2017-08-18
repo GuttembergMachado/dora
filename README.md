@@ -1,13 +1,13 @@
 # DORA - Document Object Recognition and Analysis
 
 
-**Dora** is a document classifier. It is a supervised machine learning trainer and classifier used to classify scanned images of documents, photos of documents, or video frames containing documents. 
+**Dora** is a multi-class document classifier. It is a supervised machine learning trainer and classifier used to classify scanned images of documents, photos of documents, or video frames containing documents. 
 
-**This version is still non functional (2017-Aug-07). As soon as it is working I will remove this message and provide samples as well**
+**This version is still non functional (2017-Aug-18). As soon as it is working I will remove this message (and provide samples as well)**
 
-There is serveral different techniques and algorithms implemented on its VC++ version, including my own version of a Projection Algorithm based on XYCut. 
+There is several different techniques and algorithms implemented on its VC++ version, including my own version of a Projection Algorithm based on XYCut. 
 
-This repo is the first try out of a linux port, as well as an effort to adapt the code, that was previously written for opencv 2.4, in order to  to take adavantage of the new features and patters offered from opencv 3.2.
+This repo is the first try out of a linux port, and an effort to adapt the code, that was previously written for opencv 2.4, in order to  to take advantage of some of the new features and patterns offered by opencv 3.2.
 
 Dora is a console application and although there's no setup required, it does requires an opencv 3.2 (or latter) installed.
    
@@ -16,7 +16,7 @@ Dora can be used in two distinct modes: **Modeler** and **Classifier**.
 ## Modeler mode
  This is the part that actually learns from image samples previously classified.
 
- **Modeler mode** requires a folder with several samples. In order to "teach" dora what a sample is, similar samples must be within the same folder. (eg: all social security images must be inside a folder, while all drivers licenses must be on a different folder). Each folder correspond to a **label**. Usually large sets of samples produces better classification, but it takes longer to learn. After processing the samples, a  **model** is created and saved as a file. This model is used later on used to classify images on Classifier mode.
+ **Modeler mode** requires a folder with several samples. In order to teach **dora** what a sample is, similar samples must be grouped within the same folder. (eg: all social security images stored in a filesystem folder, while all driver licenses are stored on a different folder). The folder is than consider a **label**. Folders can be nested, if desired. Usually large sets of samples produces better classification results, but it takes longer to teach/learn. After processing the samples, a  **model** is created and saved as a file. This model is later on used to classify images on Classifier mode.
 
 
 ## Classifier Mode
@@ -87,9 +87,10 @@ The following algorithms are implemented:
 
 ### Licensing
 
-Most of the algorithms used are actually provided by opencv, except by **Matrix Deviation** and **XYCut Projection as Feature**, in which I am working on and hopefully show good results. Most of the opencv's algorithms are open-sourced, but since a few of them are patented, check the licenses before using them.
+Most of the algorithms used are actually provided by opencv, except by **Matrix Deviation** and **XYCut Projection as Feature**, in which I am working on and hopefully show good results. Most of the opencv's algorithms are open-sourced, but since a few of them are patented you check its licenses before using them.
 
 
 
 ### Sample images
 - Decks of cards (courtesy of http://freeware.esoterica.free.fr/html/freecards.html)
+

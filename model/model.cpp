@@ -192,13 +192,13 @@ bool Model::initialize(){
         {
             case matcher_FLANN: {
                 //TODO: Isso aqui mudou! Alterar
-                matcher = new FlannBasedMatcher();
+                mDescriptorMatcher = new FlannBasedMatcher();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
             }
             case matcher_K_MEANS_CLUSTERING:
             case matcher_BRUTE_FORCE:
-                //matcher = new BFMatcher::create("BruteForce");
+                //mDescriptorMatcher matcher = new BFMatcher::create("BruteForce");
                 Log(log_Error, "model.cpp", "initialize", "         ERROR: MATCHER NOT IMPLEMENTED.");
                 return false;
         }
@@ -207,7 +207,12 @@ bool Model::initialize(){
         switch (mClassifierType)
         {
             case model_BAG_OF_FEATURES:{
-               mTrainer = new BOWKMeansTrainer(mDictionarySize,  TermCriteria(CV_TERMCRIT_ITER, 10, 0.001), 1, KMEANS_PP_CENTERS);
+                mTrainer = new BOWKMeansTrainer(mDictionarySize,  TermCriteria(CV_TERMCRIT_ITER, 10, 0.001), 1, KMEANS_PP_CENTERS);
+
+                Log(log_Error, "model.cpp", "initialize", "         Creating BOW feature extractor...");
+                mBOWDescriptorExtractor = new BOWImgDescriptorExtractor(mDescriptorExtractor, mDescriptorMatcher);
+                Log(log_Error, "model.cpp", "initialize", "            Done.");
+
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
             }
@@ -373,37 +378,33 @@ bool Model::createDictionary() {
 
     try{
         startSubtask = getTick();
-        Log(log_Debug, "model.cpp", "createDictionary", "      Creating new dictionary...");
+        Log(log_Debug, "model.cpp", "createDictionary", "      Creating new dictionary from valid samples...");
 
         for (int i = 0; i < mClasses.size(); i++) {
 
             for (int k = 0; k < mClasses[i].samples.size(); k++) {
 
-                sampleCount++;
-                Log(log_Debug, "model.cpp", "createDictionary", "         Processing sample %05d...", sampleCount);
+                Mat m = mClasses[i].samples[k].binaryMat;
+                if (isMatValid(m)) {
 
-                Mat m =  mClasses[i].samples[k].binaryMat;
-                if(isMatValid(m)) {
-
-                    vector<KeyPoint> features;
-                    Mat              descriptors;
+                    sampleCount++;
+                    Log(log_Debug, "model.cpp", "createDictionary", "         Processing sample %05d...", sampleCount);
 
                     Log(log_Detail, "model.cpp", "createDictionary", "            Extracting features...");
-                    mFeatureDetector->detect(m, features);
-                    if(features.size() > 0){
-                        Log(log_Detail, "model.cpp", "createDictionary", "               Computing descriptors from the %i extracted features...", features.size() );
-                        mDescriptorExtractor->compute(m, features, descriptors);
-                        if(!descriptors.empty()){
+                    mFeatureDetector->detect(m, mClasses[i].samples[k].features);
+                    if (mClasses[i].samples[k].features.size() > 0) {
+                        Log(log_Detail, "model.cpp", "createDictionary","               Computing descriptors from the %i extracted features...", mClasses[i].samples[k].features.size());
+                        mDescriptorExtractor->compute(m, mClasses[i].samples[k].features,  mClasses[i].samples[k].dic_descriptors);
+                        if (!mClasses[i].samples[k].dic_descriptors.empty()) {
                             validSampleCount++;
-                            Log(log_Detail, "model.cpp", "createDictionary", "                  Adding descriptors to Trainer...");
-                            mTrainer->add(descriptors);
-                            Log(log_Detail, "model.cpp", "createDictionary", "                     Done. Trainer has %i descriptors.", mTrainer->descriptorsCount());
-                        }else
-                            Log(log_Error, "model.cpp", "createDictionary", "            Ignoring sample because no descriptors were computed.");
-                    }else
-                        Log(log_Error, "model.cpp", "createDictionary", "            Ignoring sample because no features were extracted.");
-                }else
-                    Log(log_Error, "model.cpp", "createDictionary","            Ignoring sample because work mat is not valid");
+                            Log(log_Detail, "model.cpp", "createDictionary","                  Adding descriptors to Trainer...");
+                            mTrainer->add(mClasses[i].samples[k].dic_descriptors);
+                            Log(log_Detail, "model.cpp", "createDictionary","                     Done. Trainer has %i descriptors.", mTrainer->descriptorsCount());
+                        } else
+                            Log(log_Error, "model.cpp", "createDictionary","            Ignoring sample because no descriptors were computed.");
+                    } else
+                        Log(log_Error, "model.cpp", "createDictionary","            Ignoring sample because no features were extracted.");
+                }
             }
         }
         Log(log_Debug, "model.cpp", "createDictionary", "         Done. Processing samples took %s seconds.", getDiffString(startSubtask).c_str());
@@ -435,68 +436,47 @@ bool Model::prepareTrainingSet() {
     int64 startTask = getTick();
     int64 startSubtask;
 
+    long sampleCount = 0;
+    long validSampleCount = 0;
+
     try{
         Log(log_Debug, "model.cpp", "prepareTrainingSet", "   Preparing training set...");
-/*
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Creating bag of words extractor...");
-    BOWImgDescriptorExtractor bow(extractor, matcher);
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
 
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Setting vocabulary...");
-    bow.setVocabulary(dictionary);
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "      Setting vocabulary...");
+        mBOWDescriptorExtractor->setVocabulary(mDictionary);
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
 
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "      Preparing data (trainingData mat is '%s')...", getMatType(trainingData).c_str());
-    startSubtask = getTick();
-    for (int i = 0; i < samples.size(); i++) {
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "      Preparing samples...");
+        startSubtask = getTick();
+        for (int i = 0; i < mClasses.size(); i++) {
 
-        Log(log_Debug, "model.cpp", "prepareTrainingSet", "         Preparing sample %05d...", (i + 1));
+            for (int k = 0; k < mClasses[i].samples.size(); k++) {
 
-        vector<KeyPoint> keypoints;
-        Mat descriptors;
+                //Check if this sample has the features (saved on createDictionary)
+                if(mClasses[i].samples[k].features.size() > 0){
 
-        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Extracting features (key points)...");
-        detector->detect(samples[i].binaryMat, keypoints);
-        if(keypoints.size() > 0){
-            Log(log_Detail, "model.cpp", "prepareTrainingSet",  "            Computing descriptors from features (key points)...");
-            bow.compute(samples[i].binaryMat, keypoints, descriptors);
-            if (descriptors.cols > 0){
-                Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding %i descriptors to trainingData mat (that has '%i' items so far)...", descriptors.cols, trainingData.rows);
-                trainingData.push_back(descriptors);
-            }else
-                Log(log_Error, "model.cpp", "prepareTrainingSet", "            Failed: No descriptors were found on sample %i ('%s'), event hough %i key points were found...", (i + 1), keypoints.size(), samples[i].filename.c_str() );
-        }else
-            Log(log_Error, "model.cpp", "prepareTrainingSet", "            Failed: No features (key points) were found on sample %i ('%s')...", (i + 1), samples[i].filename.c_str() );
+                    sampleCount++;
+                    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Preparing sample %05d...", sampleCount);
 
-    }
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done. Preparing data from all %i samples took %s seconds (trainingData mat is '%s')", samples.size() , getDiffString(startSubtask).c_str(), getMatType(trainingData).c_str() );
+                    Mat m = mClasses[i].samples[k].binaryMat;
+                    Log(log_Detail, "model.cpp", "prepareTrainingSet", "         Computing descriptors from the %i features...", mClasses[i].samples[k].features.size());
+                    mBOWDescriptorExtractor->compute(m, mClasses[i].samples[k].features, mClasses[i].samples[k].bow_descriptors);
 
-    Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Preparing label mat (trainingLabel mat is '%s')...", getMatType(trainingLabel).c_str());
-    startSubtask = getTick();
-    for (int i = 0; i < samples.size(); i++) {
-
-        for (int k = 0; k < sampleClass.size(); k++){
-            if(sampleClass[k].label == samples[i].label){
-                Log(log_Debug, "model.cpp", "prepareTrainingSet",  "         Sample %05d is from class '%s'. Label is %i.", (i + 1), sampleClass[k].label.c_str(), k );
-                trainingLabel.push_back(k);
-                break;
+                    //TODO: GOTCHA 4: Is the bow_descriptos the same as the dic_descriptors?
+                    if (!mClasses[i].samples[k].bow_descriptors.empty()) {
+                        validSampleCount++;
+                        Log(log_Detail, "model.cpp", "prepareTrainingSet", "            Adding descriptors and label to the training data...");
+                        mTrainingData.push_back(mClasses[i].samples[k].bow_descriptors);
+                        mTrainingLabel.push_back(i);
+                        Log(log_Detail, "model.cpp", "prepareTrainingSet", "               Done.");
+                    }
+                }
             }
         }
-    }
-    Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done.");
+        Log(log_Error, "model.cpp", "prepareTrainingSet", "         Done. Preparing samples took %s seconds.", getDiffString(startTask).c_str());
 
-    if(isMatValid(trainingData)){
-        if(trainingData.rows == trainingLabel.rows) {
-            Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Done. Preparing training set took %s seconds.", getDiffString(startTask).c_str());
-            return true;
-        }else{
-            Log(log_Error, "model.cpp", "prepareTrainingSet", "      Failed to prepare training set. TrainingData has %i cols and TrainingLabels has %i!", trainingData.rows, trainingLabel.rows );
-        }
-
-    }else{
-        Log(log_Error, "model.cpp", "prepareTrainingSet", "      Failed to create trainingData after %s seconds.", getDiffString(startTask).c_str());
-    }
-*/
+        Log(log_Debug, "model.cpp", "prepareTrainingSet", "      Done. Preparing training set took %s seconds.", getDiffString(startSubtask).c_str());
+        return (!mTrainingData.empty() && !mTrainingLabel.empty());
 
     }catch(const std::exception& e){
         Log(log_Error, "model.cpp", "prepareTrainingSet",  "      Error preparing training set: %s", e.what()) ;
@@ -583,7 +563,7 @@ bool Model::classify(string path){
     int64 startTask = getTick();
     int64 startSubtask;
 
-    vector<KeyPoint> keypoints;
+    vector<KeyPoint> features;
     Mat m;
     Mat	descriptor;
     string sRet;
@@ -592,22 +572,17 @@ bool Model::classify(string path){
 
     startSubtask = getTick();
     Log(log_Debug, "model.cpp", "classify", "      Extracting keypoints...");
-    mFeatureDetector->detect(m, keypoints);
-    Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDiffString(startSubtask).c_str());
-
-    startSubtask = getTick();
-    Log(log_Debug, "model.cpp", "classify", "      Creating BOW extractor...");
-    BOWImgDescriptorExtractor bow(mDescriptorExtractor, matcher);
+    mFeatureDetector->detect(m, features);
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDiffString(startSubtask).c_str());
 
     startSubtask = getTick();
     Log(log_Debug, "model.cpp", "classify", "      Setting vocabulary...");
-    bow.setVocabulary(mDictionary);
+    mBOWDescriptorExtractor->setVocabulary(mDictionary);
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDiffString(startSubtask).c_str());
 
     startSubtask = getTick();
     Log(log_Debug, "model.cpp", "classify", "      Extracting descriptors from keypoints...");
-    bow.compute(m, keypoints, descriptor);
+    mBOWDescriptorExtractor->compute(m, features, descriptor);
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDiffString(startSubtask).c_str());
 
     startSubtask = getTick();

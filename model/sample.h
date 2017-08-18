@@ -43,6 +43,11 @@ public:
     Mat     grayMat;
     Mat     binaryMat;
     Mat     XYCutMat;
+
+    vector<KeyPoint> features;
+    Mat              dic_descriptors;
+    Mat              bow_descriptors;
+
 };
 
 #endif
