@@ -44,7 +44,7 @@ bool Model::create(string sampleFolder){
 
                         Log(log_Debug, "model.cpp", "create", "   Training the SVM...");
                         startSubtask = getTick();
-                        res = svm->train(mTrainingData, ROW_SAMPLE, mTrainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
+                        res = mSupportVectorMachine->train(mTrainingData, ROW_SAMPLE, mTrainingLabel);  //(ROW_SAMPLE: each training sample is a row of samples; COL_SAMPLE :each training sample occupies a column of samples)
                         Log(log_Debug, "model.cpp", "create", "      Done. Training took %s seconds.", getDiffString(startSubtask).c_str());
 
                     }
@@ -120,24 +120,44 @@ bool Model::load(){
 bool Model::save(){
 
     int64 startTask = getTick();
+    int64 startSubtask;
 
-	Log(log_Debug, "model.cpp", "save", "   Saving model file...");
+	Log(log_Debug, "model.cpp", "save", "   Saving model files...");
 
 	try{
 
-        Log(log_Debug, "model.cpp", "save", "      Saving dictionary on file '" + mFilename + "'...");
-        startTask = getTick();
+        string folder = getFolderName(mFilename);
+        string dictionaryFilename = folder + "/dictionary.yml";
+        string trainingDataFilename = folder + "/trainingData.yml";
+        string trainingLabelFilename = folder + "/trainingLabel.yml";
 
-        //Saves
-        FileStorage fs(mFilename, FileStorage::WRITE);
-        fs << "dictionary" << mDictionary;
-        fs << "trainingData" << mTrainingData;
+        startSubtask = getTick();
+        Log(log_Debug, "model.cpp", "save", "      Saving dictionary on file '%s'...", dictionaryFilename.c_str() );
+        FileStorage dictionaryFile(dictionaryFilename.c_str(), FileStorage::WRITE);
+        dictionaryFile << "dictionary" << mDictionary;
+        dictionaryFile.release();
+        Log(log_Debug, "model.cpp", "save", "         Done saving dictionary file in %s seconds.",  getDiffString(startSubtask).c_str());
 
-        fs.release();
+        startSubtask = getTick();
+        Log(log_Debug, "model.cpp", "save", "      Saving training data on '%s'...", trainingDataFilename.c_str());
+        FileStorage trainingDataFile(trainingDataFilename.c_str(), FileStorage::WRITE);
+        trainingDataFile << "trainingData" << mDictionary;
+        trainingDataFile.release();
+        Log(log_Debug, "model.cpp", "save", "         Done saving training data in %s seconds.",  getDiffString(startSubtask).c_str());
 
-        //svm.save(filename.c_str());
+        startSubtask = getTick();
+        Log(log_Debug, "model.cpp", "save", "      Saving training data on file '%s'...", trainingLabelFilename.c_str());
+        FileStorage trainingLabelFile(trainingLabelFilename.c_str(), FileStorage::WRITE);
+        trainingLabelFile << "trainingLabel" << mDictionary;
+        trainingLabelFile.release();
+        Log(log_Debug, "model.cpp", "save", "         Done saving training data in %s seconds.",  getDiffString(startSubtask).c_str());
 
-        Log(log_Debug, "model.cpp", "save", "         Done saving dictionary file in %s seconds.",  getDiffString(startTask).c_str());
+        startSubtask = getTick();
+        Log(log_Debug, "model.cpp", "save", "      Saving model to file '%s'...",  mFilename.c_str());
+        mSupportVectorMachine->save(mFilename.c_str());
+        Log(log_Debug, "model.cpp", "save", "         Done saving model took %s seconds.",  getDiffString(startSubtask).c_str());
+
+        Log(log_Debug, "model.cpp", "save", "      Done. Saving files took %s seconds.",  getDiffString(startSubtask).c_str());
 
 		return true;
 
@@ -225,24 +245,24 @@ bool Model::initialize(){
 
         startTask = getTick();
         Log(log_Error, "model.cpp", "initialize", "      Creating SVM (Support Vector Machine)...");
-        svm = SVM::create();
+        mSupportVectorMachine = SVM::create();
         Log(log_Error, "model.cpp", "initialize", "         Done.");
 
         Log(log_Error, "model.cpp", "initialize", "      Configuring SVM params...");
 
-        svm->setKernel(SVM::RBF);
+        mSupportVectorMachine->setKernel(SVM::RBF);
         Log(log_Error, "model.cpp", "initialize", "         Kernel: RBF");
 
-        svm->setType(SVM::C_SVC);
+        mSupportVectorMachine->setType(SVM::C_SVC);
         Log(log_Error, "model.cpp", "initialize", "         Type: SVC");
 
-        svm->setGamma(0.50625000000000009);
+        mSupportVectorMachine->setGamma(0.50625000000000009);
         Log(log_Error, "model.cpp", "initialize", "         Gamma: 0.50625000000000009");
 
-        svm->setC(312.50000000000000);
+        mSupportVectorMachine->setC(312.50000000000000);
         Log(log_Error, "model.cpp", "initialize", "         C: 312.5");
 
-        svm->setTermCriteria(TermCriteria(CV_TERMCRIT_ITER, 100, 0.000001));
+        mSupportVectorMachine->setTermCriteria(TermCriteria(CV_TERMCRIT_ITER, 100, 0.000001));
         Log(log_Error, "model.cpp", "initialize", "         Done.");
 
         Log(log_Error, "model.cpp", "initialize", "      Done. Initialization took %s seconds.",  getDiffString(startTask).c_str());
@@ -587,7 +607,7 @@ bool Model::classify(string path){
 
     startSubtask = getTick();
     Log(log_Debug, "model.cpp", "classify", "      Predicting from file's descriptors...");
-    float response = svm->predict(descriptor);
+    float response = mSupportVectorMachine->predict(descriptor);
     Log(log_Debug, "model.cpp", "classify", "         Done in %s seconds.",  getDiffString(startSubtask).c_str());
 
     if (response >= 0){

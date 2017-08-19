@@ -45,16 +45,9 @@ int main(int argc, char **argv){
 
             Log(log_Debug, "main.cpp", "main", "Entering MODELLER mode:");
 
-            if(mod.initialize()){
-
-                if(mod.create(inputPath)){
-
-                    if(mod.save())
-                        Log(log_Debug, "main.cpp", "main", "      Model was saved");
-                    else
-                        Log(log_Debug, "main.cpp", "main", "      Failed to save model!");
-                }
-            }
+            if(mod.initialize())
+                if(mod.create(inputPath))
+                    mod.save();
 
             //Is it the testing mode?
         }else if (mode == "-c" || mode == "-C") {

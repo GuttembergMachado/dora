@@ -60,7 +60,7 @@ class Model {
     Ptr<DescriptorExtractor>        mDescriptorExtractor;
     Ptr<BOWTrainer>	                mTrainer;
     Ptr<DescriptorMatcher>          mDescriptorMatcher;
-    Ptr<SVM>                        svm;
+    Ptr<SVM>                        mSupportVectorMachine;
     Mat							    mDictionary;
     Mat							    mTrainingData;
     Mat							    mTrainingLabel;
@@ -75,9 +75,9 @@ class Model {
     //properties
     vector<Class>               mClasses;
     string                      mFilename;
-    int					        mDictionarySize = 1000;
-    int 						mMinDimension = 70;
-    int 						mMaxDimension = 720;
+    int					        mDictionarySize = 1500;
+    int 						mMinDimension = 50;
+    int 						mMaxDimension = 1024;
     enumFeature                 mFeatureType;
     enumMatcher                 mMatcherType;
     enumClassifier              mClassifierType;

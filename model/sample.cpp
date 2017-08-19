@@ -76,11 +76,15 @@ bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, in
                             //7) Can we create the XY Cut mats?
                             if(createXYCutMat()){
 
+                               //TODO
+                               // string folder = getFolderName(mFilename);
+                               string folder =  "/home/gutto/Desktop/projects/samples/";
+
                                 //Should we save the intermediate files?
-                                saveMat(workMat,   getFolderName(mFilename) + "/temp/gray_" + getFileName(mFilename));
-                                //saveMat(grayMat,   getFolderName(mFilename) + "/temp/gray_" + getFileName(mFilename));
-                                saveMat(binaryMat, getFolderName(mFilename) + "/temp/binary_" + getFileName(mFilename));
-                                //saveMat(XYCutMat,  getFolderName(mFilename) + "/temp/xycut_" + getFileName(mFilename));
+                                //saveMat(workMat, folder + "/temp/work_" + getFileName(mFilename));
+                                //saveMat(grayMat, folder + "/temp/gray_" + getFileName(mFilename));
+                                saveMat(binaryMat, folder + "/temp/binary_" + getFileName(mFilename));
+                                //saveMat(XYCutMat, folder + "/temp/xycut_" + getFileName(mFilename));
 
                                 Log(log_Detail, "sample.cpp", "preProcess", "            Done. Sample was pre-processed successfully.");
                                 return true;
