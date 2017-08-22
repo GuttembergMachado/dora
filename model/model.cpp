@@ -99,6 +99,7 @@ bool Model::load(){
             startSubtask = getTick();
             Log(log_Debug, "model.cpp", "load", "      Loading model from file '%s'...",  mFilename.c_str());
             mSupportVectorMachine->load(mFilename.c_str());
+
             Log(log_Debug, "model.cpp", "load", "         Done loading model in %s seconds.",  getDiffString(startSubtask).c_str());
 
             Log(log_Debug, "model.cpp", "load", "      Done. Loading model took %s seconds.",  getDiffString(startSubtask).c_str());
@@ -671,8 +672,13 @@ bool Model::classify(string path){
                     mBOWDescriptorExtractor->compute(mPredictionData[i].binaryMat, mPredictionData[i].features, mPredictionData[i].bow_descriptors);
 
                     if (!mPredictionData[i].bow_descriptors.empty()){
-                        Log(log_Debug, "model.cpp", "classify","                     Predicting image %i ('%s' from file '%s)...", ( i + 1), mPredictionData[i].getLabel().c_str(), mPredictionData[i].getFilename().c_str());
-                        float response = mSupportVectorMachine->predict(mPredictionData[i].bow_descriptors);
+                        Log(log_Debug, "model.cpp", "classify","                     Predicting using the %i descriptor ('%s' from file '%s)...", mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(), mPredictionData[i].getFilename().c_str());
+
+
+                        //TODO: Something is wrong here... Itr seeems that one of the mat is empty
+                        float response = mSupportVectorMachine->predict(
+
+                        mPredictionData[i].bow_descriptors);
                         Log(log_Debug, "model.cpp", "classify","                  Done. The predicted returned %i. ('%s) after %s seconds", response, mClasses[response].getLabel().c_str());
                     } else
                         Log(log_Error, "model.cpp", "classify","            Ignoring sample because no descriptors were computed.");

@@ -7,7 +7,7 @@
 
 There is several different techniques and algorithms implemented on its VC++ version, including my own version of a Projection Algorithm based on XYCut. 
 
-This repo is the first try out of a linux port, and an effort to adapt the code, that was previously written for opencv 2.4, in order to  to take advantage of some of the new features and patterns offered by opencv 3.2.
+This repo is the first try out of a linux port, and an effort to adapt the code, that was previously written for opencv 2.4, in order to  to take advantage of some of the new features and patterns offered by opencv 3.2 (Or the new deap learing classification from the opencv 3.3)...
 
 Dora is a console application and although there's no setup required, it does requires an opencv 3.2 (or latter) installed.
    
