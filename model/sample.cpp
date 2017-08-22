@@ -8,6 +8,7 @@ Sample::Sample(){
     //Initialize the internal variables
     mLabel="";
     mFilename="";
+    mTemporaryFolder="";
 
 };
 
@@ -45,6 +46,35 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
 
 }
 
+bool Sample::set(string filename, string label, Mat sampleMat) {
+
+    try {
+        Log(log_Detail, "sample.cpp", "set", "      Loading image ('%s' from file '%s')...", filename.c_str());
+
+        mFilename = filename;
+        mLabel = label;
+
+        //Loads an unchanged mat from the image file
+        originalMat = sampleMat.clone();
+
+        //Do we have a mat?
+        if (isMatValid(originalMat)) {
+
+            Log(log_Detail, "sample.cpp", "set", "      Image was set.");
+            return true;
+
+        } else {
+            Log(log_Error, "sample.cpp", "set", "      Image was set, but resulting mat is invalid!");
+        }
+
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "set", "         Failed to set image '%s' from file: %s", e.what());
+    }
+
+    return false;
+
+}
+
 string Sample::getLabel(){
     return mLabel;
 }
@@ -53,16 +83,20 @@ string Sample::getFilename(){
     return mFilename;
 }
 
+void Sample::setTemporaryFolder(string folder){
+    mTemporaryFolder = folder;
+}
+
 bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod){
 
     //1) Is sample valid?
     if (isMatValid(originalMat)){
 
         //2) Is the sample larger enough?
-        if (originalMat.cols > minDimension && originalMat.rows > minDimension) {
+        if (originalMat.cols >= minDimension && originalMat.rows >= minDimension) {
 
             //3) Is the sample too large?
-            if (originalMat.cols < maxDimension && originalMat.rows < maxDimension) {
+            if (originalMat.cols <= maxDimension && originalMat.rows <= maxDimension) {
 
                 //4) Can we creating a resized working mat?
                 if(createWorkMat(desiredWidth, desiredHeight)){
@@ -76,15 +110,14 @@ bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, in
                             //7) Can we create the XY Cut mats?
                             if(createXYCutMat()){
 
-                               //TODO
-                               // string folder = getFolderName(mFilename);
-                               string folder =  "/home/gutto/Desktop/projects/samples/";
+                                string tempFolder;
+                                tempFolder = mTemporaryFolder + "/temp/";
 
                                 //Should we save the intermediate files?
-                                //saveMat(workMat, folder + "/temp/work_" + getFileName(mFilename));
-                                //saveMat(grayMat, folder + "/temp/gray_" + getFileName(mFilename));
-                                saveMat(binaryMat, folder + "/temp/binary_" + getFileName(mFilename));
-                                //saveMat(XYCutMat, folder + "/temp/xycut_" + getFileName(mFilename));
+                                //saveMat(workMat, tempFolder + "work_" + getFileName(mFilename));
+                                //saveMat(grayMat, tempFolder + "gray_" + getFileName(mFilename));
+                                saveMat(binaryMat, tempFolder + "binary_" + getFileName(mFilename));
+                                //saveMat(XYCutMat, tempFolder + "xycut_" + getFileName(mFilename));
 
                                 Log(log_Detail, "sample.cpp", "preProcess", "            Done. Sample was pre-processed successfully.");
                                 return true;
@@ -132,6 +165,9 @@ bool Sample::createWorkMat(int width, int height){
 
         if(isMatValid(originalMat)) {
 
+            int newWidth = 0;
+            int newHeight = 0;
+            int resizeMethod = 0;
             //INTER_NEAREST  - a nearest-neighbor interpolation
             //INTER_LINEAR   - a bilinear interpolation (used by default)
             //INTER_AREA     - a resampling using pixel area relation. It may be a preferred method for image decimation, as it gives moire’-free results. But when the image is zoomed, it is similar to the INTER_NEAREST method
@@ -141,14 +177,39 @@ bool Sample::createWorkMat(int width, int height){
             //To shrink an image, it will generally look best with CV_INTER_AREA interpolation,
             //To enlarge an image, it will generally look best with CV_INTER_CUBIC (slow) or CV_INTER_LINEAR (faster but still looks OK).
 
-            //TODO:  Fazer o resize respeitando o aspect ratio
-            // Size s = Size(width, height);
-            Size s = Size(originalMat.cols, originalMat.rows);
+            if(width > 0 && height > 0){
 
-            resize(originalMat, workMat, s, 0, 0, INTER_CUBIC);
+                //Log(log_Debug, "sample.cpp", "createWorkMat", "            Original size is W:%i x H:%i", originalMat.cols,  originalMat.rows);
+                //Log(log_Debug, "sample.cpp", "createWorkMat", "            Desired  size is W:%i x H:%i", width, height);
+
+                if (width > height) {
+                    //Calculates the new Height
+                    newWidth = width;
+                    newHeight = (originalMat.rows * width) / originalMat.cols;
+                }else{
+                    //Calculatew the new width
+                    newHeight = height;
+                    newWidth = (originalMat.cols * height) /  originalMat.rows;
+                }
+
+                //Are we enlarging?
+                if(newWidth > width || newHeight > height)
+                    resizeMethod = CV_INTER_CUBIC;
+                else
+                    resizeMethod = CV_INTER_AREA;
+
+                Size s = Size(width, height);
+
+                resize(originalMat, workMat, s, 0, 0, resizeMethod);
+
+                Log(log_Debug, "sample.cpp", "createWorkMat", "            Working mat created (original size was W:%i x H:%i, desired size was W:%i x H:%i and final size is W:%i, H:%i).", originalMat.cols, originalMat.rows, width, height, newWidth, newHeight);
+
+            }else{
+                workMat = originalMat.clone();
+                Log(log_Debug, "sample.cpp", "createWorkMat", "            Working mat created (as a copy of the original mat).");
+            }
 
             if(isMatValid(workMat)){
-                Log(log_Detail, "sample.cpp", "createWorkMat", "      Working mat created.");
                 return true;
             }
         }

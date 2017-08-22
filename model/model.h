@@ -51,7 +51,8 @@ enum enumMatcher
 class Model {
 
     //methods
-    bool                        loadSamples(string sampleFolder);
+    bool                        loadTrainingSamples(string sampleFolder);
+	bool 						loadPredictionSamples(string path);
     bool 						preProcessSamples();
 	bool             			createDictionary();
 	bool 						prepareTrainingSet();
@@ -65,25 +66,25 @@ class Model {
     Mat							    mTrainingData;
     Mat							    mTrainingLabel;
     Ptr<BOWImgDescriptorExtractor>  mBOWDescriptorExtractor;
+    vector<Class>               	mClasses;
+	vector<Sample> 					mPredictionData;
+    string                      	mFilename;
+    int					        	mDictionarySize = 1500;
+    int 							mMinDimension = 50;
+    int 							mMaxDimension = 1024;
+    enumFeature                 	mFeatureType;
+    enumMatcher                 	mMatcherType;
+    enumClassifier             		mClassifierType;
+    enumBinarization            	mBinarizationType;
+    long                        	mAverageSampleWidth = 0;
+    long                        	mAverageSampleHeight = 0;
 
-    //logging helper routines
-    string                      getClassifierName();
-    string                      getFeatureName();
-    string                      getMatcherName();
-    string                      getBinarizationName();
+	//logging helper routines
+	string                      getClassifierName();
+	string                      getFeatureName();
+	string                      getMatcherName();
+	string                      getBinarizationName();
 
-    //properties
-    vector<Class>               mClasses;
-    string                      mFilename;
-    int					        mDictionarySize = 1500;
-    int 						mMinDimension = 50;
-    int 						mMaxDimension = 1024;
-    enumFeature                 mFeatureType;
-    enumMatcher                 mMatcherType;
-    enumClassifier              mClassifierType;
-    enumBinarization            mBinarizationType;
-    long                        mAverageSampleWidth = 0;
-    long                        mAverageSampleHeight = 0;
 
 public:
 

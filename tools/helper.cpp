@@ -94,7 +94,6 @@ bool isFile(string path){
 		Log(log_Error, "helper.cpp", "isFile", "      Failed to check path: %s", e.what() ) ;
 	}
 
-	Log(log_Warning, "helper.cpp", "isFile", "      Path '%s is a not an existing file!", path.c_str() );
 	return false;
 
 }
@@ -132,8 +131,27 @@ bool isFolder(string path){
 		Log(log_Error, "helper.cpp", "isFolder", "      Failed to check path: %s", e.what() ) ;
 	}
 
-    Log(log_Warning, "helper.cpp", "isFolder", "      Path '%s' is not an existing folder!",  path.c_str());
 	return false;
+
+}
+
+string toLower(string input){
+
+	string res = input;
+
+	transform(res.begin(), res.end(), res.begin(), ::tolower);
+
+	return res;
+
+}
+
+string toUpper(string input){
+
+	string res = input;
+
+	transform(res.begin(), res.end(), res.begin(), ::toupper);
+
+	return res;
 
 }
 
@@ -237,23 +255,6 @@ vector<string> listFiles(string folder){
 	}
 
 	return res;
-
-}
-
-vector<string> loadImages(string filename){
-
-	Log(log_Detail, "helper.cpp", "loadImage", "   Loading image(s) from file...");
-
-	try{
-		int imageCount = 0;
-
-		//TODO: Implement LoadImages function...
-
-		Log(log_Detail, "helper.cpp", "loadImage", "      %i images were loaded.", imageCount );
-
-	}catch(const std::exception& e){
-		Log(log_Error, "helper.cpp", "loadImage","      Failed to load image(s): %s", e.what() ) ;
-	}
 
 }
 

@@ -16,8 +16,9 @@ using namespace std;
 using namespace cv;
 
 class Sample{
-    string  mLabel;
-    string  mFilename;
+    string mLabel;
+    string mFilename;
+    string mTemporaryFolder;
 
     bool createWorkMat(int width, int height);
     bool createGrayscaleMat();
@@ -31,11 +32,15 @@ public:
 
     //Method
     bool load(string filename, string label, bool fixBrokenJPG);
+    bool set(string filename, string label, Mat sampleMat);
     bool preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod);
 
     //Getters
     string      getFilename();
     string      getLabel();
+
+    //Setter
+    void setTemporaryFolder(string folder);
 
     //Public properties
     Mat     originalMat;

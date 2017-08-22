@@ -18,6 +18,7 @@
 #include <vector>
 #include <libgen.h>
 #include <opencv2/core.hpp>
+#include <algorithm>
 
 using namespace cv;
 using namespace std;
@@ -41,6 +42,8 @@ vector<string> loadImages(string filename);
 string getFileName(string path);
 string getFolderName(string path);
 string replace(string str, string from, string to);
+string toLower(string input);
+string toUpper(string input);
 
 int64 getTick();
 double getDiff(int64 startTick);

@@ -12,11 +12,14 @@ int main(int argc, char **argv){
     //TODO:  1) Play with com o Tesseract:
     //          #include <tesseract/baseapi.h>
     //          tesseract::TessBaseAPI ocr;
-    //TODO:  2) Finish porting Flan, SIFT , BOW
+    //DONE:  2) Finish porting Flan, SIFT , BOW
     //TODO:  3) Finish porting classifier mode
-    //TODO:  4) Check all the initialization procedure. Most of the opencv2.x functions are used differently on opencv 3.x
+    //DONE:  4) Check all the initialization procedure. Most of the opencv2.x functions are used differently on opencv 3.x
     //TODO:  5) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
     //DONE:  6) Include average sample sizes per class and over all sampels;
+    //TODO:  7) Create a loadImage to read multi image files (pdf, tiff, etc)...
+    //TODO:  8) Save dictionary, labels, training data to files
+    //TODO:  9) Load dictionary, labels and traingin data from files
 
     Model mod;
 
@@ -44,49 +47,31 @@ int main(int argc, char **argv){
         if (mode == "-m" || mode == "-M"){
 
             Log(log_Debug, "main.cpp", "main", "Entering MODELLER mode:");
+            Log(log_Debug, "main.cpp", "main", "Model filename: '%s'", mod.getFilename());
 
+            //Initialize model engine
             if(mod.initialize())
+
+                //Creates a new model file
                 if(mod.create(inputPath))
+
+                    //Saves the new created file
                     mod.save();
 
             //Is it the testing mode?
         }else if (mode == "-c" || mode == "-C") {
 
             Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
-            Log(log_Debug, "main.cpp", "main", "   Input file or folder: '%s'", inputPath.c_str());
-            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.getFilename().c_str());
-            Log(log_Debug, "main.cpp", "main", "   ");
+            Log(log_Debug, "main.cpp", "main", "Model filename: '%s'", mod.getFilename());
 
-            vector<string> files;
-            vector<string> images;
+            //Initialize model engine
+            if (mod.initialize())
 
-            //Is the input a folder?
-            if (isFolder(inputPath))
-                files = listFiles(inputPath);
-            else
-                files = loadImages(inputPath);
+                //Loads and existing model file
+                if (mod.load())
 
-            //load all images from files (in case of multi-image file formats, such as pdf, tiff, etc...)
-            for (int i = 0; i < files.size(); i++)
-                images = loadImages(files[i]);
-
-            if (images.size() >= 1){
-
-                //loads the model
-                if(mod.load()){
-
-                    for (int i = 0; i < images.size(); i++){
-
-                        //loads the image
-                        //doc.loadFile(images[i]);
-
-                        //classify the image
-                        //post.postProcessDoc(doc);
-                    }
-                }
-            }else{
-                Log(log_Error, "main.cpp", "main", "   No supported images were found.");
-            }
+                    //Classifies the input path
+                    mod.classify(inputPath);
 
         //Is it the helper mode
         }else if (mode == "-h" || mode == "-H"){

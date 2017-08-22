@@ -61,7 +61,7 @@ The following algorithms are implemented:
 #### Image Features: 
 - **Scale Invariant Feature Transform** *(default)*
 - XYCut Projection as features (actually being tested) 
-- Speeded Up Robust Features 
+- Speed Up Robust Features 
 - Local Binary Patterns 
 - Feature From Accelerated Segment Tests 
 - Binary Robust Independent Elementary Features 
@@ -74,8 +74,8 @@ The following algorithms are implemented:
    
 #### Binarization Algorithm 
 - **Derek Bradley's algorithm** *(default)*
-- Regular Tresholding
-- Mean Tresholding
+- Regular Thresholding
+- Mean Thresholding
 - Weighted Sum Area Thresholding
 - Nobuyuki Otsu's algorithm
 - Wayne Niblack's algorithm

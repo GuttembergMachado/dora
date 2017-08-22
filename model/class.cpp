@@ -40,7 +40,7 @@ void Class::calculateAverageSampleHeight(){
             sum = sum + samples[i].originalMat.rows;
         }
 
-        mAverageSampleWidth = sum / (int) samples.size();
+        mAverageSampleHeight = sum / (int) samples.size();
     }
 
 }
