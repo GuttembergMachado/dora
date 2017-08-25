@@ -22,6 +22,7 @@ int main(int argc, char **argv){
     //TODO:  9) Load dictionary, labels and traingin data from files
 
     Model mod;
+    int64 startTask = getTick();
 
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
     Log(log_Error, "main.cpp", "main", "DORA: Document Analysis and Recognition");
@@ -47,7 +48,7 @@ int main(int argc, char **argv){
         if (mode == "-m" || mode == "-M"){
 
             Log(log_Debug, "main.cpp", "main", "Entering MODELLER mode:");
-            Log(log_Debug, "main.cpp", "main", "Model filename: '%s'", mod.getFilename());
+            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.getFilename().c_str());
 
             //Initialize model engine
             if(mod.initialize())
@@ -62,7 +63,7 @@ int main(int argc, char **argv){
         }else if (mode == "-c" || mode == "-C") {
 
             Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
-            Log(log_Debug, "main.cpp", "main", "Model filename: '%s'", mod.getFilename());
+            Log(log_Debug, "main.cpp", "main", "   Model filename: '%s'", mod.getFilename().c_str());
 
             //Initialize model engine
             if (mod.initialize())
@@ -102,6 +103,8 @@ int main(int argc, char **argv){
         Log(log_Error, "main.cpp", "main", "   Missing command line argument. Try 'dora --h' for more information.");
     }
 
+
+    Log(log_Error, "main.cpp", "main", "Finished after %s seconds.", getDiffString(startTask).c_str());
     Log(log_Error, "main.cpp", "main", "-------------------------------------------------------------------------------");
 
     Log(log_Error, "main.cpp", "main", "Press any key to exit");

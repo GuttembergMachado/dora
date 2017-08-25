@@ -11,13 +11,14 @@
 using namespace std;
 
 class Class{
-    string mLabel;
+    string mLabel="";
     int mAverageSampleWidth = 0;
     int mAverageSampleHeight = 0;
 public:
-    Class(string label);
+    //Class(string label);
     vector<Sample> samples;
     string getLabel();
+    void setLabel(string label);
     int getAverageSampleWidth();
     int getAverageSampleHeight();
     void calculateAverageSampleWidth();

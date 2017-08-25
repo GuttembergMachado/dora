@@ -3,18 +3,22 @@
 //
 #include "class.h"
 
-Class::Class(string label) {
-
-    //Initialize internal variables
-    mLabel = label;
-    samples.clear();
-    mAverageSampleWidth;
-    mAverageSampleHeight;
-
-}
+//Class::Class(string label) {
+//
+//    //Initialize internal variables
+//    mLabel = label;
+//    samples.clear();
+//    mAverageSampleWidth;
+//    mAverageSampleHeight;
+//
+//}
 
 string Class::getLabel() {
     return mLabel;
+}
+
+void Class::setLabel(string label){
+    mLabel = label;
 }
 
 void Class::calculateAverageSampleWidth(){

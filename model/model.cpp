@@ -85,24 +85,36 @@ bool Model::load(){
             Log(log_Debug, "model.cpp", "load", "      Loading aux file '%s'...", auxFile.c_str() );
             FileStorage fs(auxFile.c_str(), FileStorage::READ);
             fs["dictionary"] >> mDictionary;
-            //fs["labels"] >> classLabels;
+            int i = 0;
+            do {
+                string buffer;
+                fs["class" + to_string(i)] >> buffer;
+                if (buffer.length()>0) {
+                    Class c;
+                    c.setLabel(buffer);
+                    mClasses.push_back(c);
+                    i++;
+                } else
+                    break;
+            }while(true);
             fs.release();
 
-            mClasses.clear();
-            for (int i = 0; i < classLabels.size(); i++) {
-                Class c(classLabels[i]);
-                mClasses.push_back(c);
-            }
+            Log(log_Debug, "model.cpp", "load", "         Done loading aux data in %s seconds.", getDiffString(startSubtask).c_str());
 
-            Log(log_Debug, "model.cpp", "load", "         Done loading aux data in %s seconds.",  getDiffString(startSubtask).c_str());
+            Log(log_Debug, "model.cpp", "load", "      Setting dictionary...");
+            startSubtask = getTick();
+            mBOWDescriptorExtractor->setVocabulary(mDictionary);
+            Log(log_Debug, "model.cpp", "load", "         Done setting dictionary in %s seconds.", getDiffString(startSubtask).c_str());
 
             startSubtask = getTick();
-            Log(log_Debug, "model.cpp", "load", "      Loading model from file '%s'...",  mFilename.c_str());
-            mSupportVectorMachine->load(mFilename.c_str());
+            Log(log_Debug, "model.cpp", "load", "      Loading model from file '%s'...", mFilename.c_str());
+            mSupportVectorMachine = Algorithm::load<SVM>(mFilename.c_str());
+            //mSupportVectorMachine->load(mFilename.c_str());
+            Log(log_Debug, "model.cpp", "load", "         Model has %i items...", mSupportVectorMachine->getVarCount());
 
-            Log(log_Debug, "model.cpp", "load", "         Done loading model in %s seconds.",  getDiffString(startSubtask).c_str());
+            Log(log_Debug, "model.cpp", "load", "         Done loading model in %s seconds.", getDiffString(startSubtask).c_str());
 
-            Log(log_Debug, "model.cpp", "load", "      Done. Loading model took %s seconds.",  getDiffString(startSubtask).c_str());
+            Log(log_Debug, "model.cpp", "load", "      Done. Loading model took %s seconds.", getDiffString(startTask).c_str());
             return true;
 
         }
@@ -131,15 +143,13 @@ bool Model::save(){
         vector<string> classLabels;
         classLabels.clear();
 
-        for (int i = 0; i < mClasses.size(); i++) {
-            classLabels.push_back(mClasses[i].getLabel());
-        }
-
         string auxFile = getFolderName(mFilename) + "/dictionary.yml";
         Log(log_Debug, "model.cpp", "save", "      Saving aux file '%s'...", auxFile.c_str() );
         FileStorage fs(auxFile.c_str(), FileStorage::WRITE);
         fs << "dictionary" << mDictionary;
-        //fs << "classes" << classLabels;
+        for (int i = 0; i < mClasses.size(); i++) {
+            fs << "class" + to_string(i) << mClasses[i].getLabel();
+        };
         fs.release();
         Log(log_Debug, "model.cpp", "save", "         Done saving aux data in %s seconds.",  getDiffString(startSubtask).c_str());
 
@@ -201,7 +211,7 @@ bool Model::initialize(){
         switch (mMatcherType)
         {
             case matcher_FLANN: {
-                //TODO: Isso aqui mudou! Alterar
+                //TODO: I think opencv3 has a new constructor for this. Check out later
                 mDescriptorMatcher = new FlannBasedMatcher();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
@@ -298,7 +308,8 @@ bool Model::loadTrainingSamples(string sampleFolder) {
                 //have we seen this class before?
                 if (k == mClasses.size()) {
                     //Nope. Adds it to the classes vector
-                    Class c(className);
+                    Class c;
+                    c.setLabel(className);
                     mClasses.push_back(c);
                 }
 
@@ -312,20 +323,19 @@ bool Model::loadTrainingSamples(string sampleFolder) {
 
             }
 
-            Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i samples were loaded.", files.size());
-            Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i classes were found:", mClasses.size());
+            Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i samples loaded.", files.size());
+            Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i classes found:", mClasses.size());
 
             for (int i = 0; i < mClasses.size(); i++) {
 
                 mClasses[i].calculateAverageSampleHeight();
                 mClasses[i].calculateAverageSampleWidth();
 
-                Log(log_Debug, "model.cpp", "loadTrainingSamples", "            %i) '%s' (Average size is W:%i x H:%i)", (i + 1), mClasses[i].getLabel().c_str(), mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight());
+                Log(log_Debug, "model.cpp", "loadTrainingSamples", "            %i) class '%s' (Average size is W:%i x H:%i)", (i + 1), mClasses[i].getLabel().c_str(), mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight());
                 for (int k = 0; k < mClasses[i].samples.size(); k++) {
                     mAverageSampleWidth = mAverageSampleWidth + mClasses[i].samples[k].originalMat.cols;
                     mAverageSampleHeight = mAverageSampleHeight + mClasses[i].samples[k].originalMat.rows;
                 }
-
             }
             if (files.size() > 0) {
                 mAverageSampleWidth = mAverageSampleWidth / files.size();
@@ -585,9 +595,7 @@ bool Model::loadPredictionSamples(string path) {
         //Is the input folder actually an existing folder?
         if(isFolder(path)) {
             folder = path;
-            Log(log_Debug, "helper.cpp", "loadPredictionSamples", "         Path seems to be a folder. Checking files...");
             files = listFiles(path);
-            Log(log_Debug, "helper.cpp", "loadPredictionSamples", "            Done.");
         }else {
             if (isFile(path)) {
                 folder = getFolderName(path);
@@ -595,41 +603,24 @@ bool Model::loadPredictionSamples(string path) {
             }
         }
 
+        Log(log_Debug, "model.cpp", "loadPredictionSamples", "         %s found:", (files.size() == 0 ? "No file" : (files.size() == 1 ? "Only 1 file" :  files.size() + " files")));
+
+        mPredictionData.clear();
+
         //Iterate all files
         for (int i = 0; i < files.size(); i++) {
 
-            vector<Mat> matImages;
-            matImages.clear();
+            Log(log_Detail, "helper.cpp", "loadPredictionSamples", "            Loading sample %05d...", (mPredictionData.size() + 1));
 
-            string extension = toLower(files[i].substr(files[i].find_last_of(".") + 1));
+            string label = "Image" + to_string(mPredictionData.size() + 1);
 
-            if (extension == "png" ||
-                extension == "jpg" ||
-                extension == "gif" ){
+            Sample s;
+            s.load(files[i], label, false);
+            s.setTemporaryFolder(folder);
 
-                Log(log_Debug, "helper.cpp", "loadPredictionSamples", "         Loading file '%s'...", path.c_str() );
-                Mat m = imread(files[i], CV_LOAD_IMAGE_UNCHANGED);
-                matImages.push_back(m);
+            //adds this sample to the prediction data array
+            mPredictionData.push_back(s);
 
-            }else{
-                //TODO:  Read multi image files...
-                Log(log_Debug, "helper.cpp", "loadPredictionSamples", "         Ignoring file. Unsupported extension '%s' (file '%s')...", extension.c_str(), path.c_str() );
-            }
-
-            for (int k = 0; k < matImages.size(); k++) {
-
-                string label = "Image" + to_string(k + 1);
-
-                Log(log_Debug, "helper.cpp", "loadPredictionSamples", "            Loading image %i...", (k + 1));
-                //Sets the sample
-                Sample s;
-                s.set(files[i], label, matImages[k]);
-                s.setTemporaryFolder(folder);
-
-                //adds this sample to the prediction data arrat=y
-                mPredictionData.push_back(s);
-            }
-            Log(log_Debug, "helper.cpp", "loadPredictionSamples", "            Done loading images.");
         }
 
         Log(log_Debug, "helper.cpp", "loadPredictionSamples", "         Done. Loading samples took %s seconds.", getDiffString(startTask).c_str());
@@ -649,49 +640,46 @@ bool Model::classify(string path){
     int64 startSubtask;
 
     try{
-        Log(log_Debug, "model.cpp", "classify", "   Classifying '%s'...", path.c_str());
-
-        Log(log_Debug, "model.cpp", "classify", "      Setting vocabulary...");
-        mBOWDescriptorExtractor->setVocabulary(mDictionary);
-        Log(log_Debug, "model.cpp", "classify", "         Done.");
+        Log(log_Debug, "model.cpp", "classify", "   Starting classifying...");
 
         if(loadPredictionSamples(path)){
 
-            //Iterate all files
+            Log(log_Debug, "model.cpp", "classify", "      Processing samples...");
+
+            long sampleCount = 0;
+
             for (int i = 0; i < mPredictionData.size(); i++) {
 
+                sampleCount++;
+
                 startSubtask = getTick();
-                Log(log_Debug, "model.cpp", "classify", "         Preparing sample %05d...", (i + 1));
-                mPredictionData[i].preProcess(mMinDimension , mMaxDimension, 0, 0, mBinarizationType);
 
-                Log(log_Debug, "model.cpp", "classify", "               Extracting features...");
-                mFeatureDetector->detect(mPredictionData[i].binaryMat, mPredictionData[i].features);
+                Log(log_Debug, "model.cpp", "classify", "         Pre-processing sample %05d...", (i + 1));
+                if(mPredictionData[i].preProcess(mMinDimension, mMaxDimension, 0, 0, mBinarizationType)) {
 
-                if (mPredictionData[i].features.size() > 0) {
-                    Log(log_Debug, "model.cpp", "classify","                  Computing descriptors from the %i extracted features...", mPredictionData[i].features.size());
-                    mBOWDescriptorExtractor->compute(mPredictionData[i].binaryMat, mPredictionData[i].features, mPredictionData[i].bow_descriptors);
+                    Log(log_Debug, "model.cpp", "classify", "            Extracting features...");
+                    mFeatureDetector->detect(mPredictionData[i].binaryMat, mPredictionData[i].features);
 
-                    if (!mPredictionData[i].bow_descriptors.empty()){
-                        Log(log_Debug, "model.cpp", "classify","                     Predicting using the %i descriptor ('%s' from file '%s)...", mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(), mPredictionData[i].getFilename().c_str());
+                    if (mPredictionData[i].features.size() > 0) {
+                        Log(log_Debug, "model.cpp", "classify", "            Computing descriptors from the %i extracted features...", mPredictionData[i].features.size());
+                        mBOWDescriptorExtractor->compute(mPredictionData[i].binaryMat, mPredictionData[i].features, mPredictionData[i].bow_descriptors);
 
+                        if (!mPredictionData[i].bow_descriptors.empty()) {
 
-                        //TODO: Something is wrong here... Itr seeems that one of the mat is empty
-                        float response = mSupportVectorMachine->predict(
+                            Log(log_Debug, "model.cpp", "classify","            Predicting using the %i descriptors ('%s' from file '%s)...",  mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(),  mPredictionData[i].getFilename().c_str());
+                            float response = mSupportVectorMachine->predict(mPredictionData[i].bow_descriptors);
+                            Log(log_Debug, "model.cpp", "classify","               Done. Sample is %1.0f ('%s').", response, mClasses[response].getLabel().c_str());
 
-                        mPredictionData[i].bow_descriptors);
-                        Log(log_Debug, "model.cpp", "classify","                  Done. The predicted returned %i. ('%s) after %s seconds", response, mClasses[response].getLabel().c_str());
-                    } else
-                        Log(log_Error, "model.cpp", "classify","            Ignoring sample because no descriptors were computed.");
-                } else
-                    Log(log_Error, "model.cpp", "classify","            Ignoring sample because no features were extracted.");
-
-                Log(log_Debug, "model.cpp", "classify", "         Done. Sample was checked in %s seconds.", getDiffString(startSubtask).c_str());
-
+                        }
+                    }
+                }
             }
+
+            Log(log_Error, "model.cpp", "preProcessSamples", "      Done. Classifing all samples took %s seconds.", getDiffString(startTask).c_str());
+            return true;
         }
 
-        Log(log_Debug, "model.cpp", "classify", "   Done. Classifying all %i images took %s seconds.", getDiffString(startTask).c_str());
-        return true;
+        Log(log_Debug, "model.cpp", "classify", "   Classification failed.");
 
     }catch(const std::exception& e){
         Log(log_Error, "model.cpp", "classify",  "   Error classifying path: %s", e.what()) ;
