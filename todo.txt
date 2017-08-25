@@ -3,11 +3,12 @@ TO DO LIST:
   [] Add code of conduct
   [] Add guidelines for contributing
   [] Add license
-  [] Add "What the project does" to the readme file
-  [] Add "Why the project is useful" to the readme file
-  [] Add "How users can get started with the project" to the readme file
-  [] Add "Where users can get help with your project" to the readme file
-  [] Add "Who maintains and contributes to the project" to the readme file
+  [] Add "What is dora?" to the readme file
+  [] Add "Why dora is useful?" to the readme file
+  [] Add "How does dora work?" to the readme file
+  [] Add "How can I start using dora?" to the readme file
+  [] Add "How do I benefit from dora?" to the readme file
+  [] Add "Who maintains and contributes to dora?" to the readme file
   [] Add training samples
   [] Add test samples
   [] Add a tutorial on how to download, prepare and compile
