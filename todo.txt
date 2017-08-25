@@ -1,13 +1,14 @@
 TO DO LIST:
 
-Add the folowing answers on the readme file
-  [] What the project does
-  [] Why the project is useful
-  [] How users can get started with the project
-  [] Where users can get help with your project
-  [] Who maintains and contributes to the project
-  
-Add samples
-   [] training
-   [] test
-      
+  [] Add code of conduct
+  [] Add guidelines for contributing
+  [] Add license
+  [] Add "What the project does" to the readme file
+  [] Add "Why the project is useful" to the readme file
+  [] Add "How users can get started with the project" to the readme file
+  [] Add "Where users can get help with your project" to the readme file
+  [] Add "Who maintains and contributes to the project" to the readme file
+  [] Add training samples
+  [] Add test samples
+  [] Add a tutorial on how to download, prepare and compile
+  [] Add a tutorial on how to train, test and compare the results using the provided samples.
