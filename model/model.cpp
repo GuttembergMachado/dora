@@ -603,7 +603,13 @@ bool Model::loadPredictionSamples(string path) {
             }
         }
 
-        Log(log_Debug, "model.cpp", "loadPredictionSamples", "         %s found:", (files.size() == 0 ? "No file" : (files.size() == 1 ? "Only 1 file" :  files.size() + " files")));
+        if(files.size()==0)
+            Log(log_Debug, "model.cpp", "loadPredictionSamples", "         No files found.");
+        else
+            if(files.size()==1)
+                Log(log_Debug, "model.cpp", "loadPredictionSamples", "         Only one file found:");
+            else
+                Log(log_Debug, "model.cpp", "loadPredictionSamples", "         %i files found:", files.size());
 
         mPredictionData.clear();
 
@@ -670,9 +676,12 @@ bool Model::classify(string path){
                             float response = mSupportVectorMachine->predict(mPredictionData[i].bow_descriptors);
                             Log(log_Debug, "model.cpp", "classify","               Done. Sample is %1.0f ('%s').", response, mClasses[response].getLabel().c_str());
 
-                        }
-                    }
-                }
+                        } else
+                            Log(log_Error, "model.cpp", "classify", "            Failed to compute descriptions for file '%s'!", mPredictionData[i].getFilename().c_str() );
+                    }else
+                        Log(log_Error, "model.cpp", "classify", "            Failed to extract features for file '%s'!", mPredictionData[i].getFilename().c_str() );
+                }else
+                    Log(log_Error, "model.cpp", "classify", "            Failed to pre-process sample from file '%s'!", mPredictionData[i].getFilename().c_str() );
             }
 
             Log(log_Error, "model.cpp", "preProcessSamples", "      Done. Classifing all samples took %s seconds.", getDiffString(startTask).c_str());

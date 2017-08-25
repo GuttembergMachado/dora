@@ -89,54 +89,81 @@ void Sample::setTemporaryFolder(string folder){
 
 bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod){
 
-    //1) Is sample valid?
-    if (isMatValid(originalMat)){
+    try {
+        //1) Is sample valid?
+        if (isMatValid(originalMat)) {
 
-        //2) Is the sample larger enough?
-        if (originalMat.cols >= minDimension && originalMat.rows >= minDimension) {
+            //2) Is the sample larger enough?
+            if (originalMat.cols >= minDimension && originalMat.rows >= minDimension) {
 
-            //3) Is the sample too large?
-            if (originalMat.cols <= maxDimension && originalMat.rows <= maxDimension) {
+                //3) Is the sample too large?
+            } else {
+                if (originalMat.cols <= maxDimension && originalMat.rows <= maxDimension) {
 
-                //4) Can we creating a resized working mat?
-                if(createWorkMat(desiredWidth, desiredHeight)){
+                    //4) Can we creating a resized working mat?
+                    if (createWorkMat(desiredWidth, desiredHeight)) {
 
-                    //5) Can we create a grayscale mat from the working mat?
-                    if(createGrayscaleMat()){
+                        //5) Can we create a grayscale mat from the working mat?
+                        if (createGrayscaleMat()) {
 
-                        //6) Can we create a binary mat from the grayscale mat?
-                        if(createBinaryMat(binMethod)){
+                            //6) Can we create a binary mat from the grayscale mat?
+                            if (createBinaryMat(binMethod)) {
 
-                            //7) Can we create the XY Cut mats?
-                            if(createXYCutMat()){
+                                //7) Can we create the XY Cut mats?
+                                if (createXYCutMat()) {
 
-                                string tempFolder;
-                                tempFolder = mTemporaryFolder + "/temp/";
+                                    string tempFolder;
+                                    tempFolder = mTemporaryFolder + "/temp/";
 
-                                //Should we save the intermediate files?
-                                saveMat(workMat, tempFolder + "work_" + getFileName(mFilename));
-                                saveMat(grayMat, tempFolder + "gray_" + getFileName(mFilename));
-                                saveMat(binaryMat, tempFolder + "binary_" + getFileName(mFilename));
-                                saveMat(XYCutMat, tempFolder + "xycut_" + getFileName(mFilename));
+                                    //Should we save the intermediate files?
+                                    saveMat(workMat, tempFolder + "work_" + getFileName(mFilename));
+                                    saveMat(grayMat, tempFolder + "gray_" + getFileName(mFilename));
+                                    saveMat(binaryMat, tempFolder + "binary_" + getFileName(mFilename));
+                                    saveMat(XYCutMat, tempFolder + "xycut_" + getFileName(mFilename));
 
-                                Log(log_Detail, "sample.cpp", "preProcess", "            Done. Sample was pre-processed successfully.");
-                                return true;
+                                    Log(log_Detail, "sample.cpp", "preProcess",
+                                        "            Done. Sample was pre-processed successfully.");
+                                    return true;
 
-                            }else
-                                Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because xyCut mat is invalid ('%s').", mFilename.c_str());
-                        }else
-                            Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because binary mat is invalid ('%s').", mFilename.c_str());
-                    }else
-                        Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because grayscale mat is invalid ('%s').", mFilename.c_str());
-                }else
-                    Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because working mat is invalid ('%s').", mFilename.c_str());
+                                } else {
+                                    Log(log_Error, "sample.cpp", "preProcess",
+                                        "            Ignoring sample because xyCut mat is invalid ('%s').",
+                                        mFilename.c_str());
+                                }
+
+                            } else {
+                                Log(log_Error, "sample.cpp", "preProcess",
+                                    "Ignoring sample because binary mat is invalid ('%s').", mFilename.c_str());
+                            }
+
+                        } else {
+                            Log(log_Error, "sample.cpp", "preProcess",
+                                "            Ignoring sample because grayscale mat is invalid ('%s').",
+                                mFilename.c_str());
+                        }
+
+                    } else {
+                        Log(log_Error, "sample.cpp", "preProcess",
+                            "            Ignoring sample because working mat is invalid ('%s').", mFilename.c_str());
+                    }
+
+                } else
+                    Log(log_Error, "sample.cpp", "preProcess",
+                        "            Ignoring sample because onde of its dimension is larger than %i pixels ('%s').",
+                        maxDimension, mFilename.c_str());
+
             }else
-                Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because onde of its dimension is larger than %i pixels ('%s').", maxDimension, mFilename.c_str());
-        }else
-            Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because one of its dimension is smaller than %i pixels ('%s').", minDimension, mFilename.c_str());
-    }else
-        Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because original mat is invalid ('%s').", mFilename.c_str());
+            Log(log_Error, "sample.cpp", "preProcess",
+                "            Ignoring sample because one of its dimension is smaller than %i pixels ('%s').",
+                minDimension, mFilename.c_str());
 
+        } else
+            Log(log_Error, "sample.cpp", "preProcess",
+                "            Ignoring sample because original mat is invalid ('%s').", mFilename.c_str());
+         }
+    }catch(const std::exception& e){
+        Log(log_Error, "sample.cpp", "createWorkMat",  "         Failed to create mat: %s", e.what() ) ;
+    }
     return false;
 }
 
