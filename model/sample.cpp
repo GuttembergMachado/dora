@@ -3,12 +3,12 @@
 //
 #include "sample.h"
 
-Sample::Sample(){
+Sample::Sample() {
 
     //Initialize the internal variables
-    mLabel="";
-    mFilename="";
-    mTemporaryFolder="";
+    mLabel = "";
+    mFilename = "";
+    mTemporaryFolder = "";
 
 };
 
@@ -27,7 +27,8 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
         if (isMatValid(originalMat)) {
 
             if (fixBrokenJPG) {
-                Log(log_Detail, "sample.cpp", "load", "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
+                Log(log_Detail, "sample.cpp", "load",
+                    "      Saving file again to avoid the 'Premature end of JPEG file' exception...");
                 saveMat(originalMat, mFilename);
             }
 
@@ -46,48 +47,19 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
 
 }
 
-bool Sample::set(string filename, string label, Mat sampleMat) {
-
-    try {
-        Log(log_Detail, "sample.cpp", "set", "      Loading image ('%s' from file '%s')...", filename.c_str());
-
-        mFilename = filename;
-        mLabel = label;
-
-        //Loads an unchanged mat from the image file
-        originalMat = sampleMat.clone();
-
-        //Do we have a mat?
-        if (isMatValid(originalMat)) {
-
-            Log(log_Detail, "sample.cpp", "set", "      Image was set.");
-            return true;
-
-        } else {
-            Log(log_Error, "sample.cpp", "set", "      Image was set, but resulting mat is invalid!");
-        }
-
-    } catch (const std::exception &e) {
-        Log(log_Error, "sample.cpp", "set", "         Failed to set image '%s' from file: %s", e.what());
-    }
-
-    return false;
-
-}
-
-string Sample::getLabel(){
+string Sample::getLabel() {
     return mLabel;
 }
 
-string Sample::getFilename(){
+string Sample::getFilename() {
     return mFilename;
 }
 
-void Sample::setTemporaryFolder(string folder){
+void Sample::setTemporaryFolder(string folder) {
     mTemporaryFolder = folder;
 }
 
-bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod){
+bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod) {
 
     try {
         //1) Is sample valid?
@@ -97,7 +69,6 @@ bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, in
             if (originalMat.cols >= minDimension && originalMat.rows >= minDimension) {
 
                 //3) Is the sample too large?
-            } else {
                 if (originalMat.cols <= maxDimension && originalMat.rows <= maxDimension) {
 
                     //4) Can we creating a resized working mat?
@@ -121,57 +92,36 @@ bool Sample::preProcess(int minDimension, int maxDimension, int desiredWidth, in
                                     saveMat(binaryMat, tempFolder + "binary_" + getFileName(mFilename));
                                     saveMat(XYCutMat, tempFolder + "xycut_" + getFileName(mFilename));
 
-                                    Log(log_Detail, "sample.cpp", "preProcess",
-                                        "            Done. Sample was pre-processed successfully.");
+                                    Log(log_Detail, "sample.cpp", "preProcess","            Done. Sample was pre-processed successfully.");
                                     return true;
 
-                                } else {
-                                    Log(log_Error, "sample.cpp", "preProcess",
-                                        "            Ignoring sample because xyCut mat is invalid ('%s').",
-                                        mFilename.c_str());
-                                }
-
-                            } else {
-                                Log(log_Error, "sample.cpp", "preProcess",
-                                    "Ignoring sample because binary mat is invalid ('%s').", mFilename.c_str());
-                            }
-
-                        } else {
-                            Log(log_Error, "sample.cpp", "preProcess",
-                                "            Ignoring sample because grayscale mat is invalid ('%s').",
-                                mFilename.c_str());
-                        }
-
-                    } else {
-                        Log(log_Error, "sample.cpp", "preProcess",
-                            "            Ignoring sample because working mat is invalid ('%s').", mFilename.c_str());
-                    }
-
+                                }else
+                                    Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because xyCut mat is invalid ('%s').", mFilename.c_str());
+                            }else
+                                Log(log_Error, "sample.cpp", "preProcess","            Ignoring sample because binary mat is invalid ('%s').", mFilename.c_str());
+                        }else
+                            Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because grayscale mat is invalid ('%s').", mFilename.c_str());
+                    }else
+                        Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because working mat is invalid ('%s').", mFilename.c_str());
                 } else
-                    Log(log_Error, "sample.cpp", "preProcess",
-                        "            Ignoring sample because onde of its dimension is larger than %i pixels ('%s').",
-                        maxDimension, mFilename.c_str());
-
+                    Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because one of its dimension is larger than %i pixels ('%s').",maxDimension, mFilename.c_str());
             }else
-            Log(log_Error, "sample.cpp", "preProcess",
-                "            Ignoring sample because one of its dimension is smaller than %i pixels ('%s').",
-                minDimension, mFilename.c_str());
-
+                Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because one of its dimension is smaller than %i pixels ('%s').",minDimension, mFilename.c_str());
         } else
-            Log(log_Error, "sample.cpp", "preProcess",
-                "            Ignoring sample because original mat is invalid ('%s').", mFilename.c_str());
-         }
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "createWorkMat",  "         Failed to create mat: %s", e.what() ) ;
+            Log(log_Error, "sample.cpp", "preProcess","            Ignoring sample because original mat is invalid ('%s').", mFilename.c_str());
+   
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "createWorkMat", "         Failed to create mat: %s", e.what());
     }
+    
     return false;
 }
 
-bool Sample::saveMat(Mat inputMat, string filename){
+bool Sample::saveMat(Mat inputMat, string filename) {
 
     Log(log_Detail, "sample.cpp", "saveMat", "         Saving mat as '%s'...", filename.c_str());
 
-    if(isMatValid(inputMat)) {
+    if (isMatValid(inputMat)) {
 
         //saves mat to file
         imwrite(filename, inputMat);
@@ -185,12 +135,12 @@ bool Sample::saveMat(Mat inputMat, string filename){
     return false;
 }
 
-bool Sample::createWorkMat(int width, int height){
+bool Sample::createWorkMat(int width, int height) {
 
-    try{
+    try {
         Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating the work mat...");
 
-        if(isMatValid(originalMat)) {
+        if (isMatValid(originalMat)) {
 
             int newWidth = 0;
             int newHeight = 0;
@@ -204,7 +154,7 @@ bool Sample::createWorkMat(int width, int height){
             //To shrink an image, it will generally look best with CV_INTER_AREA interpolation,
             //To enlarge an image, it will generally look best with CV_INTER_CUBIC (slow) or CV_INTER_LINEAR (faster but still looks OK).
 
-            if(width > 0 && height > 0){
+            if (width > 0 && height > 0) {
 
                 //Log(log_Debug, "sample.cpp", "createWorkMat", "            Original size is W:%i x H:%i", originalMat.cols,  originalMat.rows);
                 //Log(log_Debug, "sample.cpp", "createWorkMat", "            Desired  size is W:%i x H:%i", width, height);
@@ -213,14 +163,14 @@ bool Sample::createWorkMat(int width, int height){
                     //Calculates the new Height
                     newWidth = width;
                     newHeight = (originalMat.rows * width) / originalMat.cols;
-                }else{
+                } else {
                     //Calculatew the new width
                     newHeight = height;
-                    newWidth = (originalMat.cols * height) /  originalMat.rows;
+                    newWidth = (originalMat.cols * height) / originalMat.rows;
                 }
 
                 //Are we enlarging?
-                if(newWidth > width || newHeight > height)
+                if (newWidth > width || newHeight > height)
                     resizeMethod = CV_INTER_CUBIC;
                 else
                     resizeMethod = CV_INTER_AREA;
@@ -229,78 +179,93 @@ bool Sample::createWorkMat(int width, int height){
 
                 resize(originalMat, workMat, s, 0, 0, resizeMethod);
 
-                Log(log_Debug, "sample.cpp", "createWorkMat", "            Working mat created (original size was W:%i x H:%i, desired size was W:%i x H:%i and final size is W:%i, H:%i).", originalMat.cols, originalMat.rows, width, height, newWidth, newHeight);
+                Log(log_Detail, "sample.cpp", "createWorkMat","            Done. Work mat created (original size was W:%i x H:%i, desired size was W:%i x H:%i and final size is W:%i, H:%i).",originalMat.cols, originalMat.rows, width, height, newWidth, newHeight);
 
-            }else{
-                workMat = originalMat.clone();
-                Log(log_Debug, "sample.cpp", "createWorkMat", "            Working mat created (as a copy of the original mat).");
+            } else {
+                workMat = originalMat;
+                Log(log_Detail, "sample.cpp", "createWorkMat","            Done. Work mat created (as a copy of the original mat).");
             }
 
-            if(isMatValid(workMat)){
+            if (isMatValid(workMat)) {
                 return true;
             }
         }
 
-    }catch(const std::exception& e){
-        Log(log_Error, "sample.cpp", "createWorkMat",  "         Failed to create mat: %s", e.what() ) ;
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "createWorkMat", "         Failed to create work mat: %s", e.what());
     }
 
-    Log(log_Warning, "sample.cpp", "createWorkMat", "      Creating working mat failed.");
+    Log(log_Warning, "sample.cpp", "createWorkMat", "      Creating work mat failed.");
     return false;
 }
 
-bool Sample::createGrayscaleMat(){
-
-    Log(log_Detail, "sample.cpp", "createGrayscaleMat", "         Creating grayscale mat...");
-
-    if(isMatValid(workMat)){
-
-        //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
-        cvtColor(workMat, grayMat, CV_BGR2GRAY);
-
-        if(isMatValid(grayMat)){
-            Log(log_Detail, "sample.cpp", "createGrayscaleMat", "            Done.");
-            return true;
+bool Sample::createGrayscaleMat() {
+    
+    try {
+        Log(log_Detail, "sample.cpp", "createGrayscaleMat", "         Creating grayscale mat...");
+    
+        if (isMatValid(workMat)) {
+    
+            //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
+            cvtColor(workMat, grayMat, CV_BGR2GRAY);
+    
+            if (isMatValid(grayMat)) {
+                Log(log_Detail, "sample.cpp", "createGrayscaleMat", "            Done. Grayscale mat was created.");
+                return true;
+            }
         }
+    
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "createGrayscaleMat", "         Failed to create grayscale mat: %s", e.what());
     }
 
     Log(log_Warning, "sample.cpp", "createGrayscaleMat", "            Creating grayscale mat failed.");
     return false;
 }
 
-bool Sample::createBinaryMat(enumBinarization binMethod){
-
-    Log(log_Detail, "sample.cpp", "createBinaryMat", "         Creating binary mat...");
-
-    if(isMatValid(grayMat)) {
-
-        //converts the gray mat to a black and white one
-        binarize(grayMat, binaryMat, binMethod);
-
-        if(isMatValid(binaryMat)){
-            Log(log_Detail, "sample.cpp", "createBinaryMat", "            Done.");
-            return true;
+bool Sample::createBinaryMat(enumBinarization binMethod) {
+    
+    try {
+        Log(log_Detail, "sample.cpp", "createBinaryMat", "         Creating binary mat...");
+    
+        if (isMatValid(grayMat)) {
+    
+            //converts the gray mat to a black and white one
+            binarize(grayMat, binaryMat, binMethod);
+    
+            if (isMatValid(binaryMat)) {
+                Log(log_Detail, "sample.cpp", "createBinaryMat", "            Done. Binary mat created.");
+                return true;
+            }
         }
+    
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "createBinaryMat", "         Failed to create binary mat: %s", e.what());
     }
 
     Log(log_Warning, "sample.cpp", "createBinaryMat", "            Creating binary mat failed.");
     return false;
 }
 
-bool Sample::createXYCutMat(){
-
-    Log(log_Detail, "sample.cpp", "createXYCutMat", "         Creating XYCut mats from binary mat...");
-
-    if(isMatValid(binaryMat)) {
-
-        getXYCut(binaryMat, XYCutMat);
-
-        if(isMatValid(XYCutMat) ){
-            Log(log_Detail, "sample.cpp", "createXYCutMat", "            Done..");
-            return true;
+bool Sample::createXYCutMat() {
+    
+    try {
+        Log(log_Detail, "sample.cpp", "createXYCutMat", "         Creating XYCut mats from binary mat...");
+    
+        if (isMatValid(binaryMat)) {
+    
+            getXYCut(binaryMat, XYCutMat);
+    
+            if (isMatValid(XYCutMat)) {
+                Log(log_Detail, "sample.cpp", "createXYCutMat", "            Done. XYCut mat created.");
+                return true;
+            }
         }
+        
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "createXYCutMat", "         Failed to create XYCut mat: %s", e.what());
     }
-
+    
     Log(log_Warning, "sample.cpp", "createXYCutMat", "            Creating XYCut mats failed.");
     return false;
 }

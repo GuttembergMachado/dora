@@ -660,28 +660,27 @@ bool Model::classify(string path){
 
                 startSubtask = getTick();
 
-                Log(log_Debug, "model.cpp", "classify", "         Pre-processing sample %05d...", (i + 1));
+                Log(log_Debug, "model.cpp", "classify", "         Processing sample %05d ('%s')...", (i + 1), getFileName(mPredictionData[i].getFilename()).c_str());
                 if(mPredictionData[i].preProcess(mMinDimension, mMaxDimension, 0, 0, mBinarizationType)) {
 
-                    Log(log_Debug, "model.cpp", "classify", "            Extracting features...");
+                    Log(log_Detail, "model.cpp", "classify", "         Extracting features...");
                     mFeatureDetector->detect(mPredictionData[i].binaryMat, mPredictionData[i].features);
 
                     if (mPredictionData[i].features.size() > 0) {
-                        Log(log_Debug, "model.cpp", "classify", "            Computing descriptors from the %i extracted features...", mPredictionData[i].features.size());
+                        Log(log_Detail, "model.cpp", "classify", "         Computing descriptors from the %i extracted features...", mPredictionData[i].features.size());
                         mBOWDescriptorExtractor->compute(mPredictionData[i].binaryMat, mPredictionData[i].features, mPredictionData[i].bow_descriptors);
 
                         if (!mPredictionData[i].bow_descriptors.empty()) {
 
-                            Log(log_Debug, "model.cpp", "classify","            Predicting using the %i descriptors ('%s' from file '%s)...",  mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(),  mPredictionData[i].getFilename().c_str());
+                            Log(log_Detail, "model.cpp", "classify","         Predicting using the %i descriptors ('%s' from file '%s)...",  mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(),  mPredictionData[i].getFilename().c_str());
                             float response = mSupportVectorMachine->predict(mPredictionData[i].bow_descriptors);
-                            Log(log_Debug, "model.cpp", "classify","               Done. Sample is %1.0f ('%s').", response, mClasses[response].getLabel().c_str());
+                            Log(log_Debug, "model.cpp", "classify","            Done. Sample is '%s' (Class of index %1.0f).", mClasses[response].getLabel().c_str(), response);
 
                         } else
                             Log(log_Error, "model.cpp", "classify", "            Failed to compute descriptions for file '%s'!", mPredictionData[i].getFilename().c_str() );
                     }else
                         Log(log_Error, "model.cpp", "classify", "            Failed to extract features for file '%s'!", mPredictionData[i].getFilename().c_str() );
-                }else
-                    Log(log_Error, "model.cpp", "classify", "            Failed to pre-process sample from file '%s'!", mPredictionData[i].getFilename().c_str() );
+                }
             }
 
             Log(log_Error, "model.cpp", "preProcessSamples", "      Done. Classifing all samples took %s seconds.", getDiffString(startTask).c_str());

@@ -71,7 +71,7 @@ class Model {
     string                      	mFilename;
     int					        	mDictionarySize = 1500;
     int 							mMinDimension = 50;
-    int 							mMaxDimension = 1024;
+    int 							mMaxDimension = 4024;
     enumFeature                 	mFeatureType;
     enumMatcher                 	mMatcherType;
     enumClassifier             		mClassifierType;
