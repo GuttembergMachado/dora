@@ -81,10 +81,11 @@ bool Sample::preProcess(int desiredDimension, enumRescale rescaleMethod, enumBin
                             tempFolder = mTemporaryFolder + "temp/";
 
                             //Should we save the intermediate files?
-                            //saveMat(workMat, tempFolder + "work_" + getFileName(mFilename));
-                            //saveMat(grayMat, tempFolder + "gray_" + getFileName(mFilename));
-                            saveMat(binaryMat, tempFolder + "binary_" + getFileName(mFilename));
-                            //saveMat(XYCutMat, tempFolder + "xycut_" + getFileName(mFilename));
+                            //saveMat(originalMat,  tempFolder + mLabel + "_work_" + getFileName(mFilename));
+                            //saveMat(workMat,  tempFolder + mLabel + "_work_" + getFileName(mFilename));
+                            //saveMat(grayMat,  tempFolder + mLabel + "_gray_" + getFileName(mFilename));
+                            saveMat(binaryMat,  tempFolder + mLabel + "_binary_" + getFileName(mFilename));
+                            //saveMat(XYCutMat, tempFolder + mLabel + "_xycut_" + getFileName(mFilename));
 
                             Log(log_Detail, "sample.cpp", "preProcess","            Done. Sample was pre-processed successfully.");
                             return true;

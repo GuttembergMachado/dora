@@ -265,6 +265,8 @@ bool Model::loadTrainingSamples(string sampleFolder) {
     try{
         //Is the input folder actually an existing folder?
         if(isFolder(sampleFolder)) {
+            
+            string tempFolder =  getFolderName(mFilename);
 
             //Load all files recursivelly
             vector<string> files = listFiles(sampleFolder);
@@ -298,7 +300,7 @@ bool Model::loadTrainingSamples(string sampleFolder) {
                 //creates the sample
                 Sample s;
                 s.load(files[i], className, false);
-                s.setTemporaryFolder(sampleFolder) ;
+                s.setTemporaryFolder(tempFolder) ;
 
                 //adds this sample to the class
                 mClasses[k].samples.push_back(s);
@@ -605,6 +607,7 @@ bool Model::loadPredictionSamples(string path) {
                 files.push_back(path);
             }
         }
+        string tempFolder = getFolderName(mFilename);
 
         if(files.size()==0)
             Log(log_Debug, "model.cpp", "loadPredictionSamples", "         No files found.");
@@ -625,7 +628,7 @@ bool Model::loadPredictionSamples(string path) {
 
             Sample s;
             s.load(files[i], label, false);
-            s.setTemporaryFolder(folder);
+            s.setTemporaryFolder(tempFolder);
 
             //adds this sample to the prediction data array
             mPredictionData.push_back(s);
