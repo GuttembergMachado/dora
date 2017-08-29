@@ -1,28 +1,6 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
-//      -----------------------+------------------------------+
-//      |      TRAINING:       |        CLASSIFYING           |
-//      +----------------------+------------------------------+
-//      | List files           | List file or folder          |
-//      +----------------------+------------------------------+
-//      | Load Samples         |                              |
-//      | Pre Process Samples  |                              |
-//      +----------------------+------------------------------+
-//      | Iterate Samples      | Load dictionary from file    |
-//      |    Extract features  |                              |
-//      | Create Dictionary    |                              |
-//      +----------------------+------------------------------+
-//      | Iterate Samples      | Load labels from file        |
-//      |    Create Labels     |                              |
-//      +----------------------+------------------------------+
-//      | Iterate Samples      | Load training set from file  |
-//      |    Extract features  |                              |
-//      | Create Training Set  |                              |
-//      +----------------------+------------------------------+
-//      | Train                | Predict                      |
-//      +----------------------+------------------------------+
-
 #include "model.h"
 
 bool Model::create(string sampleFolder){
@@ -176,9 +154,13 @@ bool Model::initialize(){
     try{
         Log(log_Error, "model.cpp", "initialize", "   Initializing modules...");
         Log(log_Error, "model.cpp", "initialize", "      Preset dictionary size is %i.", mDictionarySize);
-        Log(log_Error, "model.cpp", "initialize", "      Preset minimum sample dimension is %i.", mMinDimension);
-        Log(log_Error, "model.cpp", "initialize", "      Preset maximum sample dimension is %i.", mMaxDimension);
-
+        Log(log_Error, "model.cpp", "initialize", "      Preset sample dimension is %i.", mSampleDimension);
+        Log(log_Error, "model.cpp", "initialize", "      Preset rescale method is %s.", getRescaleName().c_str());
+        
+        long                        	mAverageSampleWidth = 0;
+        long                        	mAverageSampleHeight = 0;
+        
+        
         mTrainingData  = Mat(0,mDictionarySize, CV_32S);
         mTrainingLabel = Mat(0, 1, CV_32S);
 
@@ -326,6 +308,9 @@ bool Model::loadTrainingSamples(string sampleFolder) {
             Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i samples loaded.", files.size());
             Log(log_Debug, "model.cpp", "loadTrainingSamples", "         %i classes found:", mClasses.size());
 
+            int averageSampleWidth = 0;
+            int averageSampleHeight = 0;
+            
             for (int i = 0; i < mClasses.size(); i++) {
 
                 mClasses[i].calculateAverageSampleHeight();
@@ -333,14 +318,15 @@ bool Model::loadTrainingSamples(string sampleFolder) {
 
                 Log(log_Debug, "model.cpp", "loadTrainingSamples", "            %i) class '%s' (Average size is W:%i x H:%i)", (i + 1), mClasses[i].getLabel().c_str(), mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight());
                 for (int k = 0; k < mClasses[i].samples.size(); k++) {
-                    mAverageSampleWidth = mAverageSampleWidth + mClasses[i].samples[k].originalMat.cols;
-                    mAverageSampleHeight = mAverageSampleHeight + mClasses[i].samples[k].originalMat.rows;
+                    averageSampleWidth = averageSampleWidth + mClasses[i].samples[k].originalMat.cols;
+                    averageSampleHeight = averageSampleHeight + mClasses[i].samples[k].originalMat.rows;
                 }
             }
             if (files.size() > 0) {
-                mAverageSampleWidth = mAverageSampleWidth / files.size();
-                mAverageSampleHeight = mAverageSampleHeight / files.size();
-                Log(log_Debug, "model.cpp", "loadTrainingSamples", "         Average sample size is W:%i x H:%i.", mAverageSampleWidth, mAverageSampleHeight);
+                averageSampleWidth = averageSampleWidth / files.size();
+                averageSampleHeight = averageSampleHeight / files.size();
+                Log(log_Debug, "model.cpp", "loadTrainingSamples", "         Average sample size is W:%i x H:%i.", averageSampleWidth, averageSampleHeight);
+                Log(log_Debug, "model.cpp", "loadTrainingSamples", "         Average dimension is %i (sample dimension is set to %i).", (averageSampleWidth + averageSampleHeight) / 2, mSampleDimension);
             }
 
             Log(log_Debug, "model.cpp", "loadTrainingSamples", "      Done. Loading samples took %s seconds.", getDiffString(startTask).c_str());
@@ -363,7 +349,7 @@ bool Model::preProcessSamples() {
 
     long sampleCount = 0;
     long validSampleCount = 0;
-
+    
     try{
         Log(log_Debug, "model.cpp", "preProcessSamples", "      Pre-processing samples...");
 
@@ -374,8 +360,10 @@ bool Model::preProcessSamples() {
                 sampleCount++;
 
                 Log(log_Debug, "model.cpp", "preProcessSamples", "         Pre-processing sample %05d...", sampleCount);
-
-                if(mClasses[i].samples[k].preProcess(mMinDimension, mMaxDimension, mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight(), mBinarizationType))
+                
+                //mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight()
+                
+                if(mClasses[i].samples[k].preProcess(mSampleDimension, mRescaleType, mBinarizationType))
                     validSampleCount++;
 
             }
@@ -552,6 +540,16 @@ string Model::getBinarizationName(){
     }
 }
 
+string Model::getRescaleName(){
+    
+    switch (mRescaleType){
+        case rescale_CROP:	  return "CROP (The biggest square possible is cropped from the center area)";
+        case rescale_SCALE:	  return "SCALE (The image is scaled loosing the aspect ratio)";
+        case rescale_FIT:	  return "FIT (The image is scaled keeping the aspect ratio, adding an white extra area)";
+        default:			 return "UNKNOWN";
+    }
+}
+
 void Model::setClassifierType(enumClassifier type) {
     mClassifierType = type;
     Log(log_Debug, "model.cpp", "setClassifierType", "Classifier was set to '%s'.", getClassifierName().c_str());
@@ -570,6 +568,11 @@ void Model::setMatcherType(enumMatcher type) {
 void Model::setBinarizationType(enumBinarization type) {
     mBinarizationType = type;
     Log(log_Debug, "model.cpp", "setBinarizationType", "Binarization was set to '%s'.", getBinarizationName().c_str());
+}
+
+void Model::setRescaleType(enumRescale type) {
+    mRescaleType = type;
+    Log(log_Debug, "model.cpp", "setRescaleType", "Rescale method was set to '%s'.", getRescaleName().c_str());
 }
 
 void Model::setFilename(string filename) {
@@ -661,7 +664,7 @@ bool Model::classify(string path){
                 startSubtask = getTick();
 
                 Log(log_Debug, "model.cpp", "classify", "         Processing sample %05d ('%s')...", (i + 1), getFileName(mPredictionData[i].getFilename()).c_str());
-                if(mPredictionData[i].preProcess(mMinDimension, mMaxDimension, 0, 0, mBinarizationType)) {
+                if(mPredictionData[i].preProcess(mSampleDimension, mRescaleType, mBinarizationType)) {
 
                     Log(log_Detail, "model.cpp", "classify", "         Extracting features...");
                     mFeatureDetector->detect(mPredictionData[i].binaryMat, mPredictionData[i].features);

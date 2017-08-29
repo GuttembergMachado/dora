@@ -42,6 +42,7 @@ int main(int argc, char **argv){
         mod.setFeatureType(feature_SIFT);
         mod.setMatcherType(matcher_FLANN);
         mod.setBinarizationType(binarization_BRADLEY);
+        mod.setRescaleType(rescale_FIT);
         mod.setFilename(model);
 
         //Is it the modeler  mode?

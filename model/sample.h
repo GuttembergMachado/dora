@@ -15,12 +15,19 @@
 using namespace std;
 using namespace cv;
 
+enum enumRescale
+{
+    rescale_CROP = 0,
+    rescale_SCALE = 1,
+    rescale_FIT = 2
+};
+
 class Sample{
     string mLabel;
     string mFilename;
     string mTemporaryFolder;
 
-    bool createWorkMat(int width, int height);
+    bool createWorkMat(int desiredDimension, enumRescale rescaleMethod);
     bool createGrayscaleMat();
     bool createBinaryMat(enumBinarization binMethod);
     bool createXYCutMat();
@@ -32,8 +39,7 @@ public:
 
     //Method
     bool load(string filename, string label, bool fixBrokenJPG);
-    bool set(string filename, string label, Mat sampleMat);
-    bool preProcess(int minDimension, int maxDimension, int desiredWidth, int desiredHeight, enumBinarization binMethod);
+    bool preProcess(int desiredDimension, enumRescale rescaleMethod, enumBinarization binMethod);
 
     //Getters
     string      getFilename();

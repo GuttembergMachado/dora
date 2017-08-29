@@ -47,7 +47,6 @@ enum enumMatcher
 	matcher_K_MEANS_CLUSTERING = 2,
 };
 
-
 class Model {
 
     //methods
@@ -69,22 +68,20 @@ class Model {
     vector<Class>               	mClasses;
 	vector<Sample> 					mPredictionData;
     string                      	mFilename;
+    enumFeature                 	mFeatureType = feature_SIFT;
+    enumMatcher                 	mMatcherType = matcher_FLANN;
+    enumClassifier             		mClassifierType = model_BAG_OF_FEATURES;
+    enumBinarization            	mBinarizationType = binarization_BRADLEY;
+    enumRescale                     mRescaleType = rescale_FIT;
     int					        	mDictionarySize = 1500;
-    int 							mMinDimension = 50;
-    int 							mMaxDimension = 4024;
-    enumFeature                 	mFeatureType;
-    enumMatcher                 	mMatcherType;
-    enumClassifier             		mClassifierType;
-    enumBinarization            	mBinarizationType;
-    long                        	mAverageSampleWidth = 0;
-    long                        	mAverageSampleHeight = 0;
+    int 							mSampleDimension = 100;
 
 	//logging helper routines
 	string                      getClassifierName();
 	string                      getFeatureName();
 	string                      getMatcherName();
 	string                      getBinarizationName();
-
+    string                      getRescaleName();
 
 public:
 
@@ -100,6 +97,7 @@ public:
     void             setFeatureType(enumFeature type);
     void             setMatcherType(enumMatcher type);
     void             setBinarizationType(enumBinarization type);
+    void             setRescaleType(enumRescale type);
     void             setFilename(string filename);
 
     //getters

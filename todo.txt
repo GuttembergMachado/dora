@@ -1,5 +1,9 @@
 TO DO LIST:
 
+  [] Automatically rescale all samples to a square dimension
+
+
+Readme file
   [] Add code of conduct
   [] Add guidelines for contributing
   [] Add license
