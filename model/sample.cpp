@@ -76,16 +76,13 @@ bool Sample::preProcess(int desiredDimension, enumRescale rescaleMethod, enumBin
 
                         //5) Can we create the XY Cut mats?
                         if (createXYCutMat()) {
-
-                            string tempFolder;
-                            tempFolder = mTemporaryFolder + "temp/";
-
+                            
                             //Should we save the intermediate files?
-                            //saveMat(originalMat,  tempFolder + mLabel + "_work_" + getFileName(mFilename));
-                            //saveMat(workMat,  tempFolder + mLabel + "_work_" + getFileName(mFilename));
-                            //saveMat(grayMat,  tempFolder + mLabel + "_gray_" + getFileName(mFilename));
-                            saveMat(binaryMat,  tempFolder + mLabel + "_binary_" + getFileName(mFilename));
-                            //saveMat(XYCutMat, tempFolder + mLabel + "_xycut_" + getFileName(mFilename));
+                            //saveMat(originalMat,  mTemporaryFolder + mLabel + "_work_" + getFileName(mFilename));
+                            //saveMat(workMat,  mTemporaryFolder + mLabel + "_work_" + getFileName(mFilename));
+                            //saveMat(grayMat,  mTemporaryFolder + mLabel + "_gray_" + getFileName(mFilename));
+                            saveMat(binaryMat,  mTemporaryFolder + mLabel + "_binary_" + getFileName(mFilename));
+                            //saveMat(XYCutMat, mTemporaryFolder + mLabel + "_xycut_" + getFileName(mFilename));
 
                             Log(log_Detail, "sample.cpp", "preProcess","            Done. Sample was pre-processed successfully.");
                             return true;
@@ -113,7 +110,7 @@ bool Sample::saveMat(Mat inputMat, string filename) {
     Log(log_Detail, "sample.cpp", "saveMat", "         Saving mat as '%s'...", filename.c_str());
 
     if (isMatValid(inputMat)) {
-
+        
         //saves mat to file
         imwrite(filename, inputMat);
 

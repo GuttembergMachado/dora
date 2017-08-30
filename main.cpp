@@ -20,6 +20,84 @@ int main(int argc, char **argv){
     //TODO:  7) Create a loadImage to read multi image files (pdf, tiff, etc)...
     //TODO:  8) Save dictionary, labels, training data to files
     //TODO:  9) Load dictionary, labels and traingin data from files
+    
+    //---------------------------------- DEBUG ONLY ----------------------------------
+    Sample s;
+    s.setTemporaryFolder("/home/gutto/Desktop/projects/samples/images/");
+    
+    //---------------------------------- DEBUG ONLY ----------------------------------
+    //TESTING THE RESCALE METHODS
+    //--------------------------------------------------------------------------------
+    //s.load("/home/gutto/Desktop/projects/samples/images/vertical.jpg", "rescale_CROP", false);
+    //s.preProcess(100,  rescale_CROP, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/vertical.jpg", "rescale_SCALE", false);
+    //s.preProcess(100,  rescale_SCALE, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/vertical.jpg", "rescale_FIT", false);
+    //s.preProcess(100,  rescale_FIT, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/horizontal.jpg", "rescale_CROP", false);
+    //s.preProcess(100,  rescale_CROP, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/horizontal.jpg", "rescale_SCALE", false);
+    //s.preProcess(100,  rescale_SCALE, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/horizontal.jpg", "rescale_FIT", false);
+    //s.preProcess(100,  rescale_FIT, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/square.jpg", "rescale_CROP", false);
+    //s.preProcess(100,  rescale_CROP, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/square.jpg", "rescale_SCALE", false);
+    //s.preProcess(100,  rescale_SCALE, binarization_TRESHOLD);
+    //
+    //s.load("/home/gutto/Desktop/projects/samples/images/square.jpg", "rescale_FIT", false);
+    //s.preProcess(100,  rescale_FIT, binarization_TRESHOLD);
+    
+    //---------------------------------- DEBUG ONLY ----------------------------------
+    //TESTING THE BINARIZATION METHODS
+    //--------------------------------------------------------------------------------
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_TRESHOLD", false);
+    s.preProcess(100, rescale_CROP,   binarization_TRESHOLD);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_MEAN", false);
+    s.preProcess(100, rescale_CROP,   binarization_MEAN);
+    
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_GAUSSIAN", false);
+    s.preProcess(100, rescale_CROP,   binarization_GAUSSIAN);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_NIBLACK", false);
+    s.preProcess(100, rescale_CROP,   binarization_NIBLACK);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_SAUVOLA", false);
+    s.preProcess(100, rescale_CROP,   binarization_SAUVOLA);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_WOLFJOLION", false);
+    s.preProcess(100, rescale_CROP,   binarization_WOLFJOLION);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_BRADLEY", false);
+    s.preProcess(100, rescale_CROP,   binarization_BRADLEY);
+
+    s.load("/home/gutto/Desktop/projects/samples/images/lena.bmp", "binarization_CLAHE", false);
+    s.preProcess(100, rescale_CROP,   binarization_CLAHE);
+    
+    //---------------------------------- DEBUG ONLY ----------------------------------
+    //TESTING THE RESULTS OF THE BINARIZATINO ON 3 DIFERENT IMAGES
+    //--------------------------------------------------------------------------------
+    
+    Sample s5;
+    s5.setTemporaryFolder("/home/gutto/Desktop/projects/samples/images/");
+    s5.load("/home/gutto/Desktop/projects/samples/images/page.png", "page", false);
+    s5.preProcess(100, rescale_SCALE,  binarization_TRESHOLD);
+    
+    Sample s6;
+    s6.setTemporaryFolder("/home/gutto/Desktop/projects/samples/images/");
+    s6.load("/home/gutto/Desktop/projects/samples/images/paragraph.jpg", "paragraph", false);
+    s6.preProcess(100, rescale_FIT,    binarization_TRESHOLD);
+    //--------------------------------------------------------------------------------
+
+
 
     Model mod;
     int64 startTask = getTick();
@@ -44,15 +122,6 @@ int main(int argc, char **argv){
         mod.setBinarizationType(binarization_GAUSSIAN);
         mod.setRescaleType(rescale_FIT);
         mod.setFilename(model);
-        
-        //binarization_TRESHOLD = 0, //thresold is 127
-        //binarization_MEAN = 1,     //treshold is "the mean of neighbourhood area"
-        //binarization_GAUSSIAN =2,  //threshold is weighted sum of neighbourhood values where weights are a gaussian window
-        //binarization_NIBLACK = 10,
-        //binarization_SAUVOLA = 11,
-        //binarization_WOLFJOLION = 12,
-        //binarization_BRADLEY = 13,
-        //binarization_CLAHE = 14,
         
         //Is it the modeler  mode?
         if (mode == "-m" || mode == "-M"){
