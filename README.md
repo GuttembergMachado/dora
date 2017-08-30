@@ -3,7 +3,7 @@
 
 **Dora** is a multi-class document classifier. It is a supervised machine learning trainer and classifier used to classify scanned images of documents, photos of documents, or video frames containing documents. 
 
-**This version is functional (as in 2017-Aug-29). Two samples are provided:  A deck of cards and its suits. I still working on the tutorial **
+**This version is functional (as in 2017-Aug-29). Two samples are provided:  A deck of cards and its suits. I am still working on the tutorial **
 
 There are several different techniques and algorithms implemented on the MSVC++ version, including my own version of a Projection Algorithm based on XYCut. 
 
