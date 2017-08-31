@@ -21,7 +21,7 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
         mLabel = label;
 
         //Loads an unchanged mat from the image file
-        originalMat = imread(mFilename, CV_LOAD_IMAGE_UNCHANGED);
+        originalMat = imread(mFilename, CV_LOAD_IMAGE_COLOR);
 
         //Do we have a mat?
         if (isMatValid(originalMat)) {
@@ -77,12 +77,18 @@ bool Sample::preProcess(int desiredDimension, enumRescale rescaleMethod, enumBin
                         //5) Can we create the XY Cut mats?
                         if (createXYCutMat()) {
                             
+                            string filename = getFileName(mFilename);
+                            string extension = toLower(filename.substr(filename.find_last_of(".") + 1));
+                            filename = toLower(filename.substr(0, filename.find_last_of(".") ));
+                            
                             //Should we save the intermediate files?
-                            //saveMat(originalMat,  mTemporaryFolder + mLabel + "_work_" + getFileName(mFilename));
-                            //saveMat(workMat,  mTemporaryFolder + mLabel + "_work_" + getFileName(mFilename));
-                            //saveMat(grayMat,  mTemporaryFolder + mLabel + "_gray_" + getFileName(mFilename));
-                            saveMat(binaryMat,  mTemporaryFolder + mLabel + "_binary_" + getFileName(mFilename));
-                            //saveMat(XYCutMat, mTemporaryFolder + mLabel + "_xycut_" + getFileName(mFilename));
+                            saveMat(originalMat,  mTemporaryFolder + filename + "_original." + extension );
+                            if(rescaleMethod != rescale_NONE)
+                                saveMat(workMat,      mTemporaryFolder + filename + "_work_" + mLabel + "." + extension);
+                            //saveMat(grayMat,      mTemporaryFolder + filename + "_grayscale" + mLabel + "." + extension);
+                            if(binMethod != binarization_NONE)
+                                saveMat(binaryMat,    mTemporaryFolder + filename + "_" +  mLabel + "." + extension);
+                            //saveMat(XYCutMat,     mTemporaryFolder + filename + "_xycut"     + mLabel + "." + extension);
 
                             Log(log_Detail, "sample.cpp", "preProcess","            Done. Sample was pre-processed successfully.");
                             return true;
@@ -129,62 +135,67 @@ bool Sample::createWorkMat(int desiredDimension, enumRescale rescaleMethod) {
     //To enlarge an image, it will generally look best with CV_INTER_CUBIC (slow) or CV_INTER_LINEAR (faster but still looks OK).
 
     try {
-        Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating the work mat...");
+        Log(log_Detail, "sample.cpp", "createWorkMat", "      Creating work mat...");
 
         if (isMatValid(originalMat)) {
             
-            int resizeMethod =0;
-            Mat tempMat;
-            int newSize = (originalMat.cols > originalMat.rows ? originalMat.rows : originalMat.cols);
-            
-            //Log(log_Detail, "sample.cpp", "createWorkMat", "            Original size is W:%i x H:%i", originalMat.cols, originalMat.rows);
-            //Log(log_Detail, "sample.cpp", "createWorkMat", "            Rescaled size is W:%i x H:%i", newSize, newSize);
-            //Log(log_Detail, "sample.cpp", "createWorkMat", "            Desired size is W:%i x H:%i", desiredDimension, desiredDimension);
-            
-            switch (rescaleMethod)
-            {
-                case rescale_CROP:{
-                    Rect roi;
-                    roi.x = (originalMat.cols > originalMat.rows ? (originalMat.cols / 2) - (newSize / 2) : 0);
-                    roi.y = (originalMat.cols > originalMat.rows ? 0 : (originalMat.rows / 2) - (newSize / 2));
-                    roi.width = newSize;
-                    roi.height = newSize;
-                    tempMat = originalMat(roi);
-                    break;
-                }
-                case rescale_SCALE:{
-                    tempMat = originalMat;
-                    break;
-                }
-                case rescale_FIT:{
-                    Rect roi;
-                    tempMat = Mat::zeros(newSize, newSize, originalMat.type());
-
-                    if (originalMat.cols > originalMat.rows) {
+            if(rescaleMethod != rescale_NONE) {
+                
+                int resizeMethod = 0;
+                Mat tempMat;
+                int newSize = (originalMat.cols > originalMat.rows ? originalMat.rows : originalMat.cols);
+    
+                //Log(log_Detail, "sample.cpp", "createWorkMat", "            Original size is W:%i x H:%i", originalMat.cols, originalMat.rows);
+                //Log(log_Detail, "sample.cpp", "createWorkMat", "            Rescaled size is W:%i x H:%i", newSize, newSize);
+                //Log(log_Detail, "sample.cpp", "createWorkMat", "            Desired size is W:%i x H:%i", desiredDimension, desiredDimension);
+    
+                switch (rescaleMethod) {
+                    case rescale_CROP: {
+                        Rect roi;
+                        roi.x = (originalMat.cols > originalMat.rows ? (originalMat.cols / 2) - (newSize / 2) : 0);
+                        roi.y = (originalMat.cols > originalMat.rows ? 0 : (originalMat.rows / 2) - (newSize / 2));
                         roi.width = newSize;
-                        roi.x = 0;
-                        roi.height = (originalMat.rows * newSize) / originalMat.cols;
-                        roi.y = (newSize / 2) - (roi.height / 2);
-                    } else {
-                        roi.height= newSize;
-                        roi.y = 0;
-                        roi.width =  (originalMat.cols * newSize) / originalMat.rows;
-                        roi.x = (newSize / 2) - (roi.width / 2);
+                        roi.height = newSize;
+                        tempMat = originalMat(roi);
+                        break;
                     }
-                    resize(originalMat, tempMat(roi), roi.size());
-                    break;
+                    case rescale_SCALE: {
+                        tempMat = originalMat;
+                        break;
+                    }
+                    case rescale_FIT: {
+                        Rect roi;
+                        tempMat = Mat(newSize, newSize, originalMat.type(), Scalar(255, 255, 255));
+            
+                        if (originalMat.cols > originalMat.rows) {
+                            roi.width = newSize;
+                            roi.x = 0;
+                            roi.height = (originalMat.rows * newSize) / originalMat.cols;
+                            roi.y = (newSize / 2) - (roi.height / 2);
+                        } else {
+                            roi.height = newSize;
+                            roi.y = 0;
+                            roi.width = (originalMat.cols * newSize) / originalMat.rows;
+                            roi.x = (newSize / 2) - (roi.width / 2);
+                        }
+                        resize(originalMat, tempMat(roi), roi.size());
+                        break;
+                    }
                 }
+    
+                //Are we shrinking
+                if (desiredDimension > tempMat.cols)
+                    resizeMethod = CV_INTER_CUBIC;
+                else
+                    resizeMethod = CV_INTER_AREA;
+    
+                Size s = Size(desiredDimension, desiredDimension);
+                resize(tempMat, workMat, s, 0, 0, resizeMethod);
+                
+            }else{
+                workMat = originalMat;
             }
-
-            //Are we shrinking
-            if (desiredDimension > tempMat.cols)
-                resizeMethod = CV_INTER_CUBIC;
-            else
-                resizeMethod = CV_INTER_AREA;
-
-            Size s = Size(desiredDimension, desiredDimension);
-            resize(tempMat, workMat, s, 0, 0, resizeMethod);
-
+            
             Log(log_Detail, "sample.cpp", "createWorkMat","            Done. Work mat created (original size was W:%i x H:%i, new size is W:%i, H:%i).", originalMat.cols, originalMat.rows, workMat.cols, workMat.rows);
 
             if (isMatValid(workMat)) {
@@ -209,7 +220,7 @@ bool Sample::createGrayscaleMat() {
     
             //convert the originalMat to grayscale (ignores it if is already grayscale). This functions combines RGB values with weights R=, G= and B=)
             cvtColor(workMat, grayMat, CV_BGR2GRAY);
-    
+            
             if (isMatValid(grayMat)) {
                 Log(log_Detail, "sample.cpp", "createGrayscaleMat", "            Done. Grayscale mat was created.");
                 return true;

@@ -17,9 +17,10 @@ using namespace cv;
 
 enum enumRescale
 {
-    rescale_CROP = 0,
-    rescale_SCALE = 1,
-    rescale_FIT = 2
+    rescale_NONE = 0,
+    rescale_CROP = 1,
+    rescale_SCALE = 2,
+    rescale_FIT = 3
 };
 
 class Sample{

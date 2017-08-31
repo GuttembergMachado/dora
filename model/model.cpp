@@ -529,7 +529,9 @@ string Model::getMatcherName(){
 }
 
 string Model::getBinarizationName(){
+    
     switch (mBinarizationType){
+        case binarization_NONE:       return "BINARIZATION IS OFF";
         case binarization_TRESHOLD:	  return "TRESHOLD (Byte values bigger than thresold are white, lowe is black. Threshold is 127)";
         case binarization_MEAN:	      return "MEAN (treshold is the mean of neighbourhood area)";
         case binarization_GAUSSIAN:	  return "GAUSSIAN (threshold is weighted sum of neighbourhood values where weights are a gaussian window";
@@ -545,10 +547,11 @@ string Model::getBinarizationName(){
 string Model::getRescaleName(){
     
     switch (mRescaleType){
+        case rescale_NONE:    return "RESCALE IS OFF";
         case rescale_CROP:	  return "CROP (The biggest square possible is cropped from the center area)";
         case rescale_SCALE:	  return "SCALE (The image is scaled loosing the aspect ratio)";
         case rescale_FIT:	  return "FIT (The image is scaled keeping the aspect ratio, adding an white extra area)";
-        default:			 return "UNKNOWN";
+        default:		  	  return "UNKNOWN";
     }
 }
 

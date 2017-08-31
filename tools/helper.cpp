@@ -188,6 +188,14 @@ string getFolderName(string path){
 	return s;
 }
 
+string getCurrentFolder(){
+    string path;
+    char result[ PATH_MAX ];
+    long count = readlink( "/proc/self/exe", result, PATH_MAX );
+    path = string(result, (count > 0) ? count : 0 );
+    return getFolderName(path);
+    
+}
 string replace(string str, string from, string to){
 
 	const char * s;

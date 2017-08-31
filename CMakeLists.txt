@@ -20,11 +20,16 @@ set(SOURCE_FILES
         tools/binarization.cpp
         tools/binarization.h
         tools/xycut.cpp
-        tools/xycut.h model/class.cpp model/class.h)
+        tools/xycut.h
+        model/class.cpp
+        model/class.h)
 
 add_executable(dora ${SOURCE_FILES})
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(dora ${OpenCV_LIBS})
 
-
+add_custom_command(TARGET dora POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/samples
+        $<TARGET_FILE_DIR:dora>/samples)

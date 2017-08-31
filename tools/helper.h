@@ -41,6 +41,7 @@ vector<string> listFiles(string folder);
 vector<string> loadImages(string filename);
 string getFileName(string path);
 string getFolderName(string path);
+string getCurrentFolder();
 string replace(string str, string from, string to);
 string toLower(string input);
 string toUpper(string input);

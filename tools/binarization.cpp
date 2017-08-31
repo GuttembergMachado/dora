@@ -1,8 +1,7 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
-// This file has some of the binarition algorithms I have been collection from various sources.
-//
+// This file has binarization algorithms I have been collecting from various sources.
 
 //TODO: Include licenses and links to the original documents papers
 //TODO: Check the MACROS on the header file (uget, uset, fget, gset)
@@ -22,8 +21,6 @@
 //  CV_32F = float
 //  CV_64F = double
 
-
-
 double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
 
     // *************************************************************
@@ -36,7 +33,9 @@ double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
     Mat im_sum, im_sum_sq;
     cv::integral(im, im_sum, im_sum_sq, CV_64F);
 
-    double m, s, max_s, sum, sum_sq;
+    double max_s, sum, sum_sq;
+    float s;
+    float m;
     int wxh = winX / 2;
     int wyh = winY / 2;
     int x_firstth = wxh;
@@ -51,8 +50,8 @@ double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
         sum = im_sum.at<double>(j - wyh + winY, winX) - im_sum.at<double>(j - wyh, winX) - im_sum.at<double>(j - wyh + winY, 0) + im_sum.at<double>(j - wyh, 0);
         sum_sq = im_sum_sq.at<double>(j - wyh + winY, winX) - im_sum_sq.at<double>(j - wyh, winX) - im_sum_sq.at<double>(j - wyh + winY, 0) + im_sum_sq.at<double>(j - wyh, 0);
 
-        m = sum / winarea;
-        s = sqrt((sum_sq - m*sum) / winarea);
+        m = (float) (sum / winarea);
+        s = (float) (sqrt((sum_sq - m * sum) / winarea));
         if (s > max_s) max_s = s;
 
         map_m.fset(x_firstth, j, m);
@@ -68,8 +67,8 @@ double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
             sum_sq -= im_sum_sq.at<double>(j - wyh + winY, i) - im_sum_sq.at<double>(j - wyh, i) - im_sum_sq.at<double>(j - wyh + winY, i - 1) + im_sum_sq.at<double>(j - wyh, i - 1);
             sum_sq += im_sum_sq.at<double>(j - wyh + winY, i + winX) - im_sum_sq.at<double>(j - wyh, i + winX) - im_sum_sq.at<double>(j - wyh + winY, i + winX - 1) + im_sum_sq.at<double>(j - wyh, i + winX - 1);
 
-            m = sum / winarea;
-            s = sqrt((sum_sq - m*sum) / winarea);
+            m = (float) (sum / winarea);
+            s = (float) sqrt((sum_sq - m*sum) / winarea);
             if (s > max_s) max_s = s;
 
             map_m.fset(i + wxh, j, m);
@@ -88,7 +87,7 @@ void NiblackSauvolaWolfJolion(Mat inputMat, Mat &outputMat, enumBinarization met
     // volume 4, pages 1037-1040, 2002.
 
     double m, s, max_s;
-    double th = 0;
+    float th = 0;
     double min_I, max_I;
     int wxh = winX / 2;
     int wyh = winY / 2;
@@ -119,15 +118,15 @@ void NiblackSauvolaWolfJolion(Mat inputMat, Mat &outputMat, enumBinarization met
             switch (method) {
 
                 case binarization_NIBLACK:
-                    th = m + k*s;
+                    th = (float) (m + k*s);
                     break;
 
                 case binarization_SAUVOLA:
-                    th = m * (1 + k*(s / dR - 1));
+                    th = (float) (m * (1 + k*(s / dR - 1)));
                     break;
 
                 case binarization_WOLFJOLION:
-                    th = m + k * (s / max_s - 1) * (m - min_I);
+                    th = (float) (m + k * (s / max_s - 1) * (m - min_I));
                     break;
             }
 
@@ -271,7 +270,7 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
     int winX = 0;
     int winY = 0;
     double K = 0;
-
+    
     //Calculate the window size
     if (winX == 0 || winY == 0) {
 
