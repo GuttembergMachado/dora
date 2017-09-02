@@ -68,6 +68,7 @@ class Model {
     vector<Class>               	mClasses;
 	vector<Sample> 					mPredictionData;
     string                      	mFilename;
+    string                          mTempFolder;
     enumFeature                 	mFeatureType = feature_SIFT;
     enumMatcher                 	mMatcherType = matcher_FLANN;
     enumClassifier             		mClassifierType = model_BAG_OF_FEATURES;
@@ -99,6 +100,7 @@ public:
     void             setBinarizationType(enumBinarization type);
     void             setRescaleType(enumRescale type);
     void             setFilename(string filename);
+    void             setTempFolder(string folder);
 
     //getters
     string           getFilename();

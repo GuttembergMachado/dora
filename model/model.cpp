@@ -266,11 +266,9 @@ bool Model::loadTrainingSamples(string sampleFolder) {
         //Is the input folder actually an existing folder?
         if(isFolder(sampleFolder)) {
             
-            string tempFolder =  getFolderName(mFilename);
-
             //Load all files recursivelly
             vector<string> files = listFiles(sampleFolder);
-
+  
             Log(log_Debug, "model.cpp", "loadTrainingSamples", "      Loading samples...");
 
             mClasses.clear();
@@ -300,7 +298,7 @@ bool Model::loadTrainingSamples(string sampleFolder) {
                 //creates the sample
                 Sample s;
                 s.load(files[i], className, false);
-                s.setTemporaryFolder(tempFolder) ;
+                s.setTemporaryFolder(mTempFolder) ;
 
                 //adds this sample to the class
                 mClasses[k].samples.push_back(s);
@@ -580,6 +578,11 @@ void Model::setRescaleType(enumRescale type) {
     Log(log_Debug, "model.cpp", "setRescaleType", "Rescale method was set to '%s'.", getRescaleName().c_str());
 }
 
+void Model::setTempFolder(string newTempFolder){
+    mTempFolder = newTempFolder ;
+    Log(log_Debug, "model.cpp", "setTempFolder", "Temporary folder  was set to '%s'.", mTempFolder.c_str());
+}
+
 void Model::setFilename(string filename) {
     mFilename = filename;
     Log(log_Debug, "model.cpp", "setFilename", "Filename was set to '%s'.", mFilename.c_str());
@@ -610,7 +613,6 @@ bool Model::loadPredictionSamples(string path) {
                 files.push_back(path);
             }
         }
-        string tempFolder = getFolderName(mFilename);
 
         if(files.size()==0)
             Log(log_Debug, "model.cpp", "loadPredictionSamples", "         No files found.");
@@ -631,7 +633,7 @@ bool Model::loadPredictionSamples(string path) {
 
             Sample s;
             s.load(files[i], label, false);
-            s.setTemporaryFolder(tempFolder);
+            s.setTemporaryFolder(mTempFolder);
 
             //adds this sample to the prediction data array
             mPredictionData.push_back(s);

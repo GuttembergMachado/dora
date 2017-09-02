@@ -31,13 +31,16 @@ int main(int argc, char **argv){
     Log(log_Error, "main.cpp", "main", "Log mode is:Logging and displaying: %s information.", getLogMode().c_str());
     Log(log_Error, "main.cpp", "main", "Logging and displaying: %s information.", getLogMode().c_str());
 
-    string arg1 = (argc > 1? toLower(argv[1]) : "-h");
+    string arg1 = (argc > 1 ? toLower(argv[1]) : "-h");
     string arg2 = (argc > 2 ? argv[2] : "");
-    string arg3 = (argc > 2? argv[2] : "");
+    string arg3 = (argc > 3 ? argv[3] : "");
+    string arg4 = (argc > 4 ? argv[4] : "");
 
     Log(log_Debug, "main.cpp", "main", "   argument 1: '%s'", arg1.c_str());
     Log(log_Debug, "main.cpp", "main", "   argument 2: '%s'", arg2.c_str());
     Log(log_Debug, "main.cpp", "main", "   argument 3: '%s'", arg3.c_str());
+    Log(log_Debug, "main.cpp", "main", "   argument 4: '%s'", arg4.c_str());
+    
     
     if (arg1 == "-m" || arg1 == "-c") {
         mod.setClassifierType(model_BAG_OF_FEATURES);
@@ -54,8 +57,10 @@ int main(int argc, char **argv){
 
         string inputPath = arg2;
         string modelFilename = arg3;
+        string tempFolder = arg4;
         
         mod.setFilename(modelFilename);
+        mod.setTempFolder(tempFolder);
         
         //Initialize model engine
         if(mod.initialize())
@@ -73,7 +78,9 @@ int main(int argc, char **argv){
     
         string inputPath = arg2;
         string modelFilename = arg3;
-    
+        string tempFolder = arg4;
+        
+        mod.setTempFolder(tempFolder);
         mod.setFilename(modelFilename);
 
         //Initialize model engine
@@ -200,16 +207,6 @@ int main(int argc, char **argv){
     
         s.load(debugFolder + "paragraph.jpg", "binarization_CLAHE", false);
         s.preProcess(100, rescale_NONE,   binarization_CLAHE);
-
-        //---------------------------------- DEBUG ONLY ----------------------------------
-        //TESTING THE RESULTS OF THE BINARIZATINO ON 3 DIFERENT IMAGES
-        //--------------------------------------------------------------------------------
-        // s.load(debugFolder + "page.png", "page", false);
-        //s.preProcess(100, rescale_FIT,    binarization_TRESHOLD);
-
-        //s.load(debugFolder + "paragraph.jpg", "paragraph", false);
-        //s.preProcess(100, rescale_FIT,    binarization_TRESHOLD);
-        //--------------------------------------------------------------------------------
 
     // Is it the helper mode
     }else if (arg1 == "-h"){

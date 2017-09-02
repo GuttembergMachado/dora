@@ -178,8 +178,8 @@ void NiblackSauvolaWolfJolion(Mat inputMat, Mat &outputMat, enumBinarization met
                     thsurf.fset(i, u, th);
     }
 
-    for (int y = 0; y<inputMat.rows; ++y)
-        for (int x = 0; x<inputMat.cols; ++x)
+    for (int y = 0; y < inputMat.rows; y++)
+        for (int x = 0; x < inputMat.cols; x++)
         {
             if (inputMat.uget(x, y) >= thsurf.fget(x, y))
             {
@@ -271,6 +271,9 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
     int winY = 0;
     double K = 0;
     
+    //Make sure the outputMat is the same size as the inputMat, but with reduced depth
+    destMat = Mat(sourceMat.rows, sourceMat.cols, CV_8U, Scalar::all(255));
+    
     //Calculate the window size
     if (winX == 0 || winY == 0) {
 
@@ -281,27 +284,35 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         if (winX > 100)
             winX = winY = 40;
     }
-
+    
     switch (method) {
 
         case binarization_TRESHOLD:
         {
-            if (sourceMat.channels() == 1)
-                threshold(sourceMat, destMat, 127, 255, THRESH_BINARY);
-            else
+            if (sourceMat.channels() == 1) {
+                double thresholdValue = 127;
+                double maxValue = 255;
+                threshold(sourceMat, destMat, thresholdValue, maxValue, THRESH_BINARY);
+            }else
                 Log(log_Debug, "binarization.cpp", "binarize", "Error: SourceMat is not grayscale.");
         }
         break;
 
         case binarization_MEAN:
         {
-            adaptiveThreshold(sourceMat, destMat, 255, ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY,11,2);
+            double maxValue = 255;
+            int blockSize = 11; //The size of neighbourhood area.
+            double C = 2;          //A constant which is subtracted from the mean or weighted mean calculated.
+            adaptiveThreshold(sourceMat, destMat, maxValue, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY , blockSize, C);
         }
         break;
 
         case binarization_GAUSSIAN:
         {
-            adaptiveThreshold(sourceMat, destMat, 255, ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,2);
+            double maxValue = 255;
+            int blockSize = 11; //The size of neighbourhood area.
+            double C = 2;          //A constant which is subtracted from the mean or weighted mean calculated.
+            adaptiveThreshold(sourceMat, destMat, maxValue, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, blockSize, C);
         }
         break;
 
@@ -317,7 +328,8 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         case binarization_NIBLACK:
         {
             K = 0.2;
-            NiblackSauvolaWolfJolion(~sourceMat, destMat, binarization_NIBLACK, winX, winY, K, 128);
+            double DR = 128;
+            NiblackSauvolaWolfJolion(~sourceMat, destMat, binarization_NIBLACK, winX, winY, K, DR);
             destMat = ~destMat;
         }
         break;
@@ -325,14 +337,16 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         case binarization_SAUVOLA:
         {
             K = 0.5;
-            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_SAUVOLA, winX, winY, K, 128);
+            double DR = 128;
+            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_SAUVOLA, winX, winY, K, DR);
         }
             break;
 
         case binarization_WOLFJOLION:
         {
             K = 0.5;
-            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_WOLFJOLION, winX, winY, K, 128);
+            double DR = 128;
+            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_WOLFJOLION, winX, winY, K, DR);
         }
         break;
 
@@ -347,10 +361,9 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         break;
     }
 
-    if(destMat.rows > 0 && destMat.cols > 0 && destMat.channels() == 1)
+    if(isMatValid(destMat))
         return true;
 
     return false;
 
 }
-

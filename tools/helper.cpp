@@ -20,7 +20,7 @@ using namespace std;
 //	1; errors and warnings
 //	2; errors, warnings and debug
 //	3; errors, warnings, debug and details
-int log_level = 3;
+int log_level = 2;
 
 string log_filename = "log.txt";
 

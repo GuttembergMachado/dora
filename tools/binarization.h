@@ -24,22 +24,9 @@ enum enumBinarization
     binarization_CLAHE = 8,
 };
 
-//  CV_8U  = uchar
-//  CV_8S  = schar
-//  CV_16U = ushort
-//  CV_16S = short
-//  CV_32S = int
-//  CV_32F = float
-//  CV_64F = double
-
-//#define uget(x,y)    at<unsigned char>(y,x)
-//#define uset(x,y,v)  at<unsigned char>(y,x)=v;
-//#define fget(x,y)    at<float>(y,x)
-//#define fset(x,y,v)  at<float>(y,x)=v;
-
-#define uget(x,y)	 at<char>(y,x)
-#define uset(x,y,v)  at<char>(y,x)=v;
-#define fget(x,y)	 at<float>(y,x)
+#define uget(x,y)    at<unsigned char>(y,x)
+#define uset(x,y,v)  at<unsigned char>(y,x)=v;
+#define fget(x,y)    at<float>(y,x)
 #define fset(x,y,v)  at<float>(y,x)=v;
 
 

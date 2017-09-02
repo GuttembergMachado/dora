@@ -22,7 +22,7 @@ set(SOURCE_FILES
         tools/xycut.cpp
         tools/xycut.h
         model/class.cpp
-        model/class.h)
+        model/class.h tools/noise.h)
 
 add_executable(dora ${SOURCE_FILES})
 
