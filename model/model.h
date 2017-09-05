@@ -91,7 +91,8 @@ public:
     bool             create(string sampleFolder);
     bool             load();
     bool             save();
-    bool             classify(string path);
+    bool             classify(Sample s, string expectedLabel);
+    bool             test(string path);
 
     //setters
     void             setClassifierType(enumClassifier type);

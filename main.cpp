@@ -12,15 +12,9 @@ int main(int argc, char **argv){
     //TODO:  1) Play with com o Tesseract:
     //          #include <tesseract/baseapi.h>
     //          tesseract::TessBaseAPI ocr;
-    //DONE:  2) Finish porting Flan, SIFT , BOW
-    //TODO:  3) Finish porting classifier mode
-    //DONE:  4) Check all the initialization procedure. Most of the opencv2.x functions are used differently on opencv 3.x
-    //TODO:  5) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
-    //DONE:  6) Include average sample sizes per class and over all sampels;
-    //TODO:  7) Create a loadImage to read multi image files (pdf, tiff, etc)...
-    //TODO:  8) Save dictionary, labels, training data to files
-    //TODO:  9) Load dictionary, labels and traingin data from files
-
+    //TODO:  2) Check what is the optimized size of a dictionary (based on samples, number of labels, etc)
+    //TODO:  3) Create a loadImage to read multi image files (pdf, tiff, etc)...
+    
     Model mod;
     int64 startTask = getTick();
 
@@ -41,12 +35,11 @@ int main(int argc, char **argv){
     Log(log_Debug, "main.cpp", "main", "   argument 3: '%s'", arg3.c_str());
     Log(log_Debug, "main.cpp", "main", "   argument 4: '%s'", arg4.c_str());
     
-    
     if (arg1 == "-m" || arg1 == "-c") {
         mod.setClassifierType(model_BAG_OF_FEATURES);
         mod.setFeatureType(feature_SIFT);
         mod.setMatcherType(matcher_FLANN);
-        mod.setBinarizationType(binarization_SAUVOLA);
+        mod.setBinarizationType(binarization_WOLFJOLION);
         mod.setRescaleType(rescale_FIT);
     }
     
@@ -90,7 +83,7 @@ int main(int argc, char **argv){
             if (mod.load())
         
                 //Classifies the input path
-                mod.classify(inputPath);
+                mod.test(inputPath);
         
     //Is it the debug mode
     }else if (arg1 == "-d"){

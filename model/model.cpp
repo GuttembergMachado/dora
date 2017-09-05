@@ -13,7 +13,7 @@ bool Model::create(string sampleFolder){
         Log(log_Error, "model.cpp", "create", "   Creating model...");
 
         if(loadTrainingSamples(sampleFolder)){
-
+    
             if(preProcessSamples()){
 
                 if(createDictionary()){
@@ -360,9 +360,7 @@ bool Model::preProcessSamples() {
                 sampleCount++;
 
                 Log(log_Debug, "model.cpp", "preProcessSamples", "         Pre-processing sample %05d...", sampleCount);
-                
-                //mClasses[i].getAverageSampleWidth(), mClasses[i].getAverageSampleHeight()
-                
+  
                 if(mClasses[i].samples[k].preProcess(mSampleDimension, mRescaleType, mBinarizationType))
                     validSampleCount++;
 
@@ -651,58 +649,80 @@ bool Model::loadPredictionSamples(string path) {
 
 }
 
-bool Model::classify(string path){
+bool Model::classify(Sample s, string expectedLabel){
 
     int64 startTask = getTick();
-    int64 startSubtask;
 
     try{
-        Log(log_Debug, "model.cpp", "classify", "   Starting classifying...");
-
-        if(loadPredictionSamples(path)){
-
-            Log(log_Debug, "model.cpp", "classify", "      Processing samples...");
-
-            long sampleCount = 0;
-
-            for (int i = 0; i < mPredictionData.size(); i++) {
-
-                sampleCount++;
-
-                startSubtask = getTick();
-
-                Log(log_Debug, "model.cpp", "classify", "         Processing sample %05d ('%s')...", (i + 1), getFileName(mPredictionData[i].getFilename()).c_str());
-                if(mPredictionData[i].preProcess(mSampleDimension, mRescaleType, mBinarizationType)) {
-
-                    Log(log_Detail, "model.cpp", "classify", "         Extracting features...");
-                    mFeatureDetector->detect(mPredictionData[i].binaryMat, mPredictionData[i].features);
-
-                    if (mPredictionData[i].features.size() > 0) {
-                        Log(log_Detail, "model.cpp", "classify", "         Computing descriptors from the %i extracted features...", mPredictionData[i].features.size());
-                        mBOWDescriptorExtractor->compute(mPredictionData[i].binaryMat, mPredictionData[i].features, mPredictionData[i].bow_descriptors);
-
-                        if (!mPredictionData[i].bow_descriptors.empty()) {
-
-                            Log(log_Detail, "model.cpp", "classify","         Predicting using the %i descriptors ('%s' from file '%s)...",  mPredictionData[i].bow_descriptors, mPredictionData[i].getLabel().c_str(),  mPredictionData[i].getFilename().c_str());
-                            float response = mSupportVectorMachine->predict(mPredictionData[i].bow_descriptors);
-                            Log(log_Debug, "model.cpp", "classify","            Done. Sample is '%s' (Class of index %1.0f).", mClasses[response].getLabel().c_str(), response);
-
-                        } else
-                            Log(log_Error, "model.cpp", "classify", "            Failed to compute descriptions for file '%s'!", mPredictionData[i].getFilename().c_str() );
+        Log(log_Debug, "model.cpp", "classify", "         Classifying '%s'...", s.getFilename().c_str());
+    
+        if(s.preProcess(mSampleDimension, mRescaleType, mBinarizationType)) {
+        
+            Log(log_Detail, "model.cpp", "classify", "         Extracting features...");
+            mFeatureDetector->detect(s.binaryMat, s.features);
+        
+            if (s.features.size() > 0) {
+                
+                Log(log_Detail, "model.cpp", "classify", "         Computing descriptors from the %i extracted features...", s.features.size());
+                mBOWDescriptorExtractor->compute(s.binaryMat, s.features, s.bow_descriptors);
+            
+                if (!s.bow_descriptors.empty()) {
+                
+                    Log(log_Detail, "model.cpp", "classify","         Predicting using the %i descriptors ('%s' from file '%s)...", s.bow_descriptors, s.getLabel().c_str(), s.getFilename().c_str());
+                    float response = mSupportVectorMachine->predict(s.bow_descriptors);
+                    
+                    if (mClasses[response].getLabel().c_str() == expectedLabel){
+                        Log(log_Debug, "model.cpp", "classify","            Success. Dora classified as '%s' (Class of index %1.0f) in %s seconds!", mClasses[response].getLabel().c_str(), response, getDiffString(startTask).c_str());
+                        return true;
                     }else
-                        Log(log_Error, "model.cpp", "classify", "            Failed to extract features for file '%s'!", mPredictionData[i].getFilename().c_str() );
-                }
-            }
-
-            Log(log_Error, "model.cpp", "preProcessSamples", "      Done. Classifing all samples took %s seconds.", getDiffString(startTask).c_str());
-            return true;
-        }
-
-        Log(log_Debug, "model.cpp", "classify", "   Classification failed.");
-
+                        Log(log_Debug, "model.cpp", "classify","            Failed. Dora classified as '%s' (index %1.0f), but we were expecting it to be '%s' (after %s seconds)!", mClasses[response].getLabel().c_str(), response, expectedLabel.c_str(), getDiffString(startTask).c_str());
+                }else
+                    Log(log_Error, "model.cpp", "classify", "            Failed to compute descriptions for file '%s'!", s.getFilename().c_str() );
+            }else
+                Log(log_Error, "model.cpp", "classify", "            Failed to extract features for file '%s'!", s.getFilename().c_str() );
+        }else
+            Log(log_Error, "model.cpp", "classify", "            Failed to pre-process sample file '%s'!", s.getFilename().c_str() );
     }catch(const std::exception& e){
         Log(log_Error, "model.cpp", "classify",  "   Error classifying path: %s", e.what()) ;
     }
 
+    return false;
+}
+
+bool Model::test(string path){
+    
+    int64 startTask = getTick();
+    int successCount = 0;
+    
+    try{
+        Log(log_Debug, "model.cpp", "test", "   Starting classification tests...");
+        
+        if(loadPredictionSamples(path)){
+            
+            Log(log_Debug, "model.cpp", "test", "      Processing samples...");
+            
+            long sampleCount = 0;
+            
+            for (int i = 0; i < mPredictionData.size(); i++) {
+                
+                sampleCount++;
+                string className = replace(getFolderName(mPredictionData[i].getFilename()), path, "");
+                
+                if(classify(mPredictionData[i], className))
+                    successCount++;
+               
+            }
+            
+            float successRate = (successCount * 100 / mPredictionData.size());
+            Log(log_Debug, "model.cpp", "test", "      Done. All %i samples were classified in %s seconds. Success rate is %1.2f%!", mPredictionData.size(), getDiffString(startTask).c_str(), successRate);
+            return true;
+        }
+        
+        Log(log_Debug, "model.cpp", "test", "   Classification failed.");
+        
+    }catch(const std::exception& e){
+        Log(log_Error, "model.cpp", "test",  "   Error classifying path: %s", e.what()) ;
+    }
+    
     return false;
 }

@@ -1,0 +1,19 @@
+
+    On 04/09/2017 using the suits set:
+
+    //100x100   binarization_NONE         rescale_FIT        0%
+    //100x100   binarization_TRESHOLD     rescale_FIT       45%
+    //100x100   binarization_MEAN         rescale_FIT       45%
+    //100x100   binarization_GAUSSIAN     rescale_FIT       58%
+    //100x100   binarization_NIBLACK      rescale_FIT       54%
+    //100x100   binarization_SAUVOLA      rescale_FIT       41%
+    //100x100   binarization_WOLFJOLION   rescale_FIT       79%
+    //100x100   binarization_BRADLEY      rescale_FIT        0%
+    //100x100   binarization_CLAHE        rescale_FIT       50%
+
+    //100x100   binarization_WOLFJOLION   rescale_NONE      41%
+    //100x100   binarization_WOLFJOLION   rescale_CROP      50%
+    //100x100   binarization_WOLFJOLION   rescale_SCALE     54%,
+    //100x100   binarization_WOLFJOLION   rescale_FIT       70%
+
+    //50x50     binarization_WOLFJOLION   rescale_FIT       70%

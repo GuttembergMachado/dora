@@ -1,25 +1,7 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
-// This file has binarization algorithms I have been collecting from various sources.
-
-//TODO: Include licenses and links to the original documents papers
-//TODO: Check the MACROS on the header file (uget, uset, fget, gset)
-//TODO: Replace the integral method (on Bradley's algorithm by opencv's similar function
-//TODO: Check all data types
-//TODO: Add some detailed logs
-//TODO: Tests the Niblack, Sauvola, Wolf, Jolion methods to make sure they still work
-//TODO: Check the expected Mat paramters declarations and implementation
-
 #include "binarization.h"
-
-//  CV_8U  = uchar
-//  CV_8S  = schar
-//  CV_16U = ushort
-//  CV_16S = short
-//  CV_32S = int
-//  CV_32F = float
-//  CV_64F = double
 
 double calcLocalStats(Mat &im, Mat &map_m, Mat &map_s, int winX, int winY) {
 
@@ -197,7 +179,7 @@ void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
     int S = (inputMat.cols / 8);
     float Z = (1.0f - T);
     int x, y;
-    long sum = 0;
+    char sum = 0;
     int count = 0;
     int index;
     int x1, y1, x2, y2;
@@ -205,10 +187,10 @@ void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
 
     Mat resultMat = Mat(inputMat.size(), CV_8U);
     Mat integralMat = Mat(inputMat.size(), CV_32F);
-
-    auto * input = (uchar *) inputMat.data;
-    auto * output = (uchar *) resultMat.data;
-    auto * integral = (float *) integralMat.data;
+    
+    uchar * input =  inputMat.data;
+    uchar * output = resultMat.data;
+    uchar * integral = integralMat.data;
 
     //Creates the integral image
     for (x = 0; x < inputMat.cols; x++)
@@ -223,7 +205,7 @@ void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
             sum += input[index];
 
             if (y == 0)
-                integral[index] = sum;
+                integral[index] = (uchar) sum;
             else
                 integral[index] = integral[index - 1] + sum;
         }
@@ -254,7 +236,7 @@ void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
                   integral[y2 * inputMat.cols + x1] +
                   integral[y1 * inputMat.cols + x1];
 
-            if ((long)(input[index] * count) < (long)(sum * Z))
+            if (input[index] * count < (sum * Z))
                 output[index] = 0;
             else
                 output[index] = 255;
@@ -266,24 +248,24 @@ void bradley_Binarization(Mat &inputMat, Mat &outputMat, float T){
 }
 
 bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
-
-    int winX = 0;
-    int winY = 0;
+    
+    
     double K = 0;
+    
+    //Calculate the window size
+    //int windowHeight = (int) ((2.0 * sourceMat.rows - 1) / 3);
+    //int windowWidth = (sourceMat.cols - 1 < windowHeight ? sourceMat.cols - 1 : windowHeight);
+    int windowHeight = sourceMat.rows / 12;
+    int windowWidth = sourceMat.cols / 12;
+    
+    //Limit the window size
+    if (windowWidth > 100){
+        windowHeight = 40;
+        windowHeight = 40;
+    }
     
     //Make sure the outputMat is the same size as the inputMat, but with reduced depth
     destMat = Mat(sourceMat.rows, sourceMat.cols, CV_8U, Scalar::all(255));
-    
-    //Calculate the window size
-    if (winX == 0 || winY == 0) {
-
-        winY = (int) (2.0 * sourceMat.rows - 1) / 3;
-        winX = (int) sourceMat.cols - 1 < winY ? sourceMat.cols - 1 : winY;
-
-        //Limit the window size
-        if (winX > 100)
-            winX = winY = 40;
-    }
     
     switch (method) {
 
@@ -329,7 +311,7 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         {
             K = 0.2;
             double DR = 128;
-            NiblackSauvolaWolfJolion(~sourceMat, destMat, binarization_NIBLACK, winX, winY, K, DR);
+            NiblackSauvolaWolfJolion(~sourceMat, destMat, binarization_NIBLACK, windowWidth, windowHeight, K, DR);
             destMat = ~destMat;
         }
         break;
@@ -338,7 +320,7 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         {
             K = 0.5;
             double DR = 128;
-            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_SAUVOLA, winX, winY, K, DR);
+            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_SAUVOLA, windowWidth, windowHeight, K, DR);
         }
             break;
 
@@ -346,7 +328,7 @@ bool binarize(Mat &sourceMat, Mat &destMat, enumBinarization method){
         {
             K = 0.5;
             double DR = 128;
-            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_WOLFJOLION, winX, winY, K, DR);
+            NiblackSauvolaWolfJolion(sourceMat, destMat, binarization_WOLFJOLION, windowWidth, windowHeight, K, DR);
         }
         break;
 
