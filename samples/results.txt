@@ -15,5 +15,3 @@
     //100x100   binarization_WOLFJOLION   rescale_CROP      50%
     //100x100   binarization_WOLFJOLION   rescale_SCALE     54%,
     //100x100   binarization_WOLFJOLION   rescale_FIT       70%
-
-    //50x50     binarization_WOLFJOLION   rescale_FIT       70%

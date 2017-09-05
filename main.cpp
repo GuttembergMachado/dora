@@ -35,14 +35,12 @@ int main(int argc, char **argv){
     Log(log_Debug, "main.cpp", "main", "   argument 3: '%s'", arg3.c_str());
     Log(log_Debug, "main.cpp", "main", "   argument 4: '%s'", arg4.c_str());
     
-    if (arg1 == "-m" || arg1 == "-c") {
-        mod.setClassifierType(model_BAG_OF_FEATURES);
-        mod.setFeatureType(feature_SIFT);
-        mod.setMatcherType(matcher_FLANN);
-        mod.setBinarizationType(binarization_WOLFJOLION);
-        mod.setRescaleType(rescale_FIT);
-    }
-    
+    mod.setClassifierType(model_BAG_OF_FEATURES);
+    mod.setFeatureType(feature_SIFT);
+    mod.setMatcherType(matcher_FLANN);
+    mod.setBinarizationType(binarization_WOLFJOLION);
+    mod.setRescaleType(rescale_FIT);
+
     //Is it the modeler mode?
     if (arg1 == "-m"){
 
@@ -84,6 +82,28 @@ int main(int argc, char **argv){
         
                 //Classifies the input path
                 mod.test(inputPath);
+        
+        
+    //Is it the webcam  mode?
+    }else if (arg1 == "-w") {
+    
+        Log(log_Debug, "main.cpp", "main", "Entering CLASSIFIER mode:");
+    
+        string webcamPath = arg2;
+        string modelFilename = arg3;
+        string tempFolder = arg4;
+    
+        mod.setTempFolder(tempFolder);
+        mod.setFilename(modelFilename);
+    
+        //Initialize model engine
+        if (mod.initialize())
+        
+            //Loads and existing model file
+            if (mod.load())
+            
+                //Classifies the input path
+                mod.classifyCamera();
         
     //Is it the debug mode
     }else if (arg1 == "-d"){

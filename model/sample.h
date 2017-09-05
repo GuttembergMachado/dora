@@ -40,6 +40,7 @@ public:
 
     //Method
     bool load(string filename, string label, bool fixBrokenJPG);
+    bool set(Mat inputMat);
     bool preProcess(int desiredDimension, enumRescale rescaleMethod, enumBinarization binMethod);
 
     //Getters

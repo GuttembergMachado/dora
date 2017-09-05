@@ -93,6 +93,7 @@ public:
     bool             save();
     bool             classify(Sample s, string expectedLabel);
     bool             test(string path);
+    bool             classifyCamera();
 
     //setters
     void             setClassifierType(enumClassifier type);

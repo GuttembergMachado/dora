@@ -47,6 +47,35 @@ bool Sample::load(string filename, string label, bool fixBrokenJPG) {
 
 }
 
+bool Sample::set(Mat inputMat){
+    
+    try {
+        Log(log_Detail, "sample.cpp", "set", "      Loading mat...");
+        
+        mFilename = "";
+        mLabel = "";
+        
+        //Loads an unchanged mat from the image file
+        originalMat = inputMat;
+        
+        //Do we have a mat?
+        if (isMatValid(originalMat)) {
+            
+            Log(log_Detail, "sample.cpp", "set", "      Mat was set.");
+            return true;
+            
+        } else {
+            Log(log_Error, "sample.cpp", "set", "      Failed to set mat.");
+        }
+        
+    } catch (const std::exception &e) {
+        Log(log_Error, "sample.cpp", "load", "         Error setting mat: %s", e.what());
+    }
+    
+    return false;
+    
+}
+
 string Sample::getLabel() {
     return mLabel;
 }
@@ -77,27 +106,31 @@ bool Sample::preProcess(int desiredDimension, enumRescale rescaleMethod, enumBin
                         //5) Can we create the XY Cut mats?
                         if (createXYCutMat()) {
                             
-                            string filename = getFileName(mFilename);
-                            string extension = toLower(filename.substr(filename.find_last_of(".") + 1));
-                            filename = toLower(filename.substr(0, filename.find_last_of(".") ));
-                            
-                            //Should we save the intermediate files?
-                            //saveMat(originalMat,  mTemporaryFolder + filename + "_original." + extension );
-                            
-                            //if(rescaleMethod != rescale_NONE)
-                            //    saveMat(workMat,      mTemporaryFolder + filename + "_work_" + mLabel + "." + extension);
-                            
-                            //saveMat(grayMat,      mTemporaryFolder + filename + "_grayscale" + mLabel + "." + extension);
-                            
-                            //if(binMethod != binarization_NONE)
-                            //    saveMat(binaryMat,    mTemporaryFolder + filename + "_" +  mLabel + "." + extension);
-                            saveMat(binaryMat,    mTemporaryFolder + mLabel + "_" + filename + "." + extension);
-                            
-                            //saveMat(XYCutMat,     mTemporaryFolder + filename + "_xycut"     + mLabel + "." + extension);
+                            if(mFilename != ""){
+                                
+                                string filename = getFileName(mFilename);
+                                string extension = toLower(filename.substr(filename.find_last_of(".") + 1));
+                                filename = toLower(filename.substr(0, filename.find_last_of(".") ));
+    
+                                //Should we save the intermediate files?
+                                //saveMat(originalMat,  mTemporaryFolder + filename + "_original." + extension );
+    
+                                //if(rescaleMethod != rescale_NONE)
+                                //    saveMat(workMat,      mTemporaryFolder + filename + "_work_" + mLabel + "." + extension);
+    
+                                //saveMat(grayMat,      mTemporaryFolder + filename + "_grayscale" + mLabel + "." + extension);
+    
+                                //if(binMethod != binarization_NONE)
+                                //    saveMat(binaryMat,    mTemporaryFolder + filename + "_" +  mLabel + "." + extension);
+                                saveMat(binaryMat,    mTemporaryFolder + mLabel + "_" + filename + "." + extension);
+    
+                                //saveMat(XYCutMat,     mTemporaryFolder + filename + "_xycut"     + mLabel + "." + extension);
 
+                            }
+    
                             Log(log_Detail, "sample.cpp", "preProcess","            Done. Sample was pre-processed successfully.");
                             return true;
-
+                            
                         }else
                             Log(log_Error, "sample.cpp", "preProcess", "            Ignoring sample because xyCut mat is invalid ('%s').", mFilename.c_str());
                     }else

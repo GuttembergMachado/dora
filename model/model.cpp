@@ -193,7 +193,6 @@ bool Model::initialize(){
         switch (mMatcherType)
         {
             case matcher_FLANN: {
-                //TODO: I think opencv3 has a new constructor for this. Check out later
                 mDescriptorMatcher = new FlannBasedMatcher();
                 Log(log_Error, "model.cpp", "initialize", "         Done.");
                 break;
@@ -686,6 +685,77 @@ bool Model::classify(Sample s, string expectedLabel){
         Log(log_Error, "model.cpp", "classify",  "   Error classifying path: %s", e.what()) ;
     }
 
+    return false;
+}
+
+bool Model::classifyCamera(){
+    
+    int64 startTask = getTick();
+    
+    try{
+        
+        Log(log_Debug, "model.cpp", "classifyCamera", "         Initializing camera...");
+        
+        VideoCapture capture;
+        capture.open(0);
+        if(!capture.isOpened()){
+            Log(log_Error, "model.cpp", "classifyCamera", "         Failed to initialize camera!");
+            return false;
+        }
+        
+        Mat edges;
+        namedWindow("webcam", WINDOW_NORMAL);
+        while(true)
+        {
+            Mat frame;
+            capture >> frame;
+            Sample s;
+            s.set(frame);
+            if (s.preProcess(mSampleDimension, mRescaleType, mBinarizationType)) {
+                 
+                 Log(log_Detail, "model.cpp", "classify", "         Extracting features...");
+                 mFeatureDetector->detect(s.binaryMat, s.features);
+                 
+                 if (s.features.size() > 0) {
+                     
+                     Log(log_Detail, "model.cpp", "classify", "         Computing descriptors from the %i extracted features...", s.features.size());
+                     mBOWDescriptorExtractor->compute(s.binaryMat, s.features, s.bow_descriptors);
+                     
+                     if (!s.bow_descriptors.empty()) {
+                         
+                         Log(log_Detail, "model.cpp", "classify","         Predicting using the %i descriptors ('%s' from file '%s)...", s.bow_descriptors, s.getLabel().c_str(), s.getFilename().c_str());
+                        
+                         Mat receivedResponses;
+                         float response = mSupportVectorMachine->predict(s.bow_descriptors, receivedResponses);
+                         
+                         Log(log_Debug, "model.cpp", "classify","            Current Classification is '%s' (Class of index %1.0f)", mClasses[response].getLabel().c_str(), response, getDiffString(startTask).c_str());
+                         Log(log_Debug, "model.cpp", "classify","            Current Probability is '%s' (Class of index %1.0f)", mClasses[response].getLabel().c_str(), response, getDiffString(startTask).c_str());
+                         
+                     }else
+                         Log(log_Error, "model.cpp", "classify", "            Failed to compute descriptions for file '%s'!", s.getFilename().c_str() );
+                 }else
+                     Log(log_Error, "model.cpp", "classify", "            Failed to extract features for file '%s'!", s.getFilename().c_str() );
+             }else
+                 Log(log_Error, "model.cpp", "classify", "            Failed to pre-process sample file '%s'!", s.getFilename().c_str() );
+
+            imshow("webcam", frame);
+            
+            int key = waitKey(250);
+            Log(log_Detail, "model.cpp", "classify", "         Key is %i", key);
+            if(key != 255){
+                  break;
+            }
+            
+        };
+        capture.release();
+        
+        Log(log_Debug, "model.cpp", "classifyCamera", "         Done!");
+        return true;
+        
+    }catch(const std::exception& e) {
+        Log(log_Error, "model.cpp", "classify", "   Error classifying path: %s", e.what());
+    }
+    
     return false;
 }
 
