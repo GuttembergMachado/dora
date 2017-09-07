@@ -2,8 +2,8 @@
 // Guttemberg Machado on 31/07/17.
 //
 
-#ifndef XYCUT_H
-#define XYCUT_H
+#ifndef DORA_XYCUT_H
+#define DORA_XYCUT_H
 
 #include "helper.h"
 #include "opencv2/imgproc.hpp"
@@ -17,3 +17,4 @@ bool getYCut(Mat &source, Mat &dest);
 bool getXYCut(Mat &source, Mat &dest);
 
 #endif
+

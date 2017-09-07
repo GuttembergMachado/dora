@@ -13,6 +13,8 @@ set(SOURCE_FILES
         main.cpp
         model/model.cpp
         model/model.h
+        model/class.cpp
+        model/class.h
         model/sample.h
         model/sample.cpp
         tools/helper.cpp
@@ -21,8 +23,8 @@ set(SOURCE_FILES
         tools/binarization.h
         tools/xycut.cpp
         tools/xycut.h
-        model/class.cpp
-        model/class.h tools/noise.h)
+        tools/transforms.cpp
+        tools/transforms.h)
 
 add_executable(dora ${SOURCE_FILES})
 

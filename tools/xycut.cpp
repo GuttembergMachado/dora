@@ -43,10 +43,10 @@ bool getXYCut(Mat &source, Mat &dest){
 	//========================================================================//
 	//                                                                        //
 	//   +--------+----+--------+                                             //
-	//   |        |    |        |    where:                                    //
+	//   |        |    |        |    where:                                   //
 	//   |        |    |        |            I  = Imagem                      //
 	//   |    I   | VP |   VR   |            VP = Vertical Projection         //
-	//   |        |    |        |            VR = Veritical Representation    //
+	//   |        |    |        |            VR = Vertical Representation     //
 	//   |        |    |        |            HP = Horizontal Projection       //
 	//   +--------+----+--------+            HR = Horizontal Representation   //
 	//   +   HP   +                                                           //

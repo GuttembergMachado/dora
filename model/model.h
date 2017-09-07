@@ -2,8 +2,8 @@
 // Guttemberg Machado on 24/07/17.
 //
 
-#ifndef MODELS_H
-#define MODELS_H
+#ifndef DORA_MODEL_H
+#define DORA_MODEL_H
 
 #include <opencv2/features2d.hpp>  //FeatureDetector, DescriptorExtractor, BOWTrainer, DescriptorMatcher
 #include <opencv2/xfeatures2d/nonfree.hpp>   //SiftFeatureDetector, SiftDescriptorExtractor, SurfFeatureDetector, SurfDescriptorExtractor

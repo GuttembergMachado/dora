@@ -2,8 +2,8 @@
 // Guttemberg Machado on 24/07/17.
 //
 
-#ifndef SAMPLE_H
-#define SAMPLE_H
+#ifndef DORA_SAMPLE_H
+#define DORA_SAMPLE_H
 
 #include "../tools/helper.h"
 #include "../tools/binarization.h"

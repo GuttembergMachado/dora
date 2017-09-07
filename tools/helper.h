@@ -1,8 +1,8 @@
 //
 // Guttemberg Machado on 24/07/17.
 //
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef DORA_HELPER_H
+#define DORA_HELPER_H
 
 #include <stdarg.h>
 #include <unistd.h>
