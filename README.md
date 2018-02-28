@@ -87,7 +87,7 @@ The following algorithms are implemented:
 
 ### Licensing
 
-Most of the algorithms used are actually provided by opencv, except by **Matrix Deviation** and **XYCut Projection as Feature**, in which I am working on and hopefully show good results. Most of the opencv's algorithms are open-sourced, but since a few of them are patented you check its licenses before using them.
+Most of the algorithms used are actually provided by opencv, except by **Matrix Deviation** and **XYCut Projection as Feature**, in which I am working on and hopefully show good results. Most of the opencv's algorithms are open-sourced, but since a few of them are patented you should check its licenses before using them.
 
 
 
